@@ -36,6 +36,7 @@ public class Variable
 
 }
 
+// fujky fujky fujky
 public static class Compute
 {
 
@@ -104,14 +105,44 @@ public static class Compute
         return true;
     }
 
-    public static bool ToBase(List<string> equation, int index)
+    public static bool ToBase(List<string> command)
     {
-        if (!Double.TryParse(equation.ElementAtOrDefault(index + 1), out fnValX)) return false;
-        if (!Double.TryParse(equation.ElementAtOrDefault(index + 2), out fnValY)) return false;
+        if (!Double.TryParse(command.ElementAtOrDefault(1), out fnValX)) return false;
+        if (!Double.TryParse(command.ElementAtOrDefault(2), out fnValY)) return false;
         if (fnValY != 2 && fnValY != 8 && fnValY != 10 && fnValY != 16) return false;
-        equation[index] = Convert.ToString((int)fnValX, (int)fnValY);
+        command[0] = Convert.ToString((int)fnValX, (int)fnValY);
         return true;
     }
+
+    public static bool Log(List<string> equation, int index)
+    {
+        // X = base, Y = value
+        if (!Double.TryParse(equation.ElementAtOrDefault(index + 1), out fnValX)) return false;
+        if (!Double.TryParse(equation.ElementAtOrDefault(index + 2), out fnValY)) return false;
+        //if (fnValX <= 0) return false;
+        equation[index] = Math.Log(fnValY, fnValX).ToString();
+        equation.RemoveAt(index + 2);
+        equation.RemoveAt(index + 1);
+        return true;
+        // Math.Log(
+    }
+
+    public static bool Floor(List<string> equation, int index)
+    {
+        if (!Double.TryParse(equation.ElementAtOrDefault(index + 1), out fnValX)) return false;
+        equation[index] = Math.Floor(fnValX).ToString();
+        equation.RemoveAt(index + 1);
+        return true;
+    }
+
+    public static bool Ceil(List<string> equation, int index)
+    {
+        if (!Double.TryParse(equation.ElementAtOrDefault(index + 1), out fnValX)) return false;
+        equation[index] = Math.Ceiling(fnValX).ToString();
+        equation.RemoveAt(index + 1);
+        return true;
+    }
+
 }
 
 public class Menu
@@ -121,7 +152,7 @@ public class Menu
 
     // neni nutno, neni nutno, aby byly tyhle veci List
     private string[] _availableOperators = new string[] { "*", "%", "/", "+", "-" };
-    private string[] _availableFunctions = new string[] { "pow", "sqrt", "frombase", "tobase", "sin", "cos", "tan" };
+    private string[] _availableFunctions = new string[] { "pow", "sqrt", "frombase", "tobase", "sin", "cos", "tan", "log", "floor", "ceil", "var", "precision", "exit" };
 
     public List<string> Command { get => _command; set => _command = value; }
     public List<Variable> Variables { get => _variables; set => _variables = value; }
@@ -145,15 +176,15 @@ public class Menu
             Console.WriteLine("Promenne:");
             foreach (Variable v in _variables)
             {
-                Console.WriteLine($"{v.Name}: {v.Value}");
+                Console.WriteLine($"{v.Name}: {Math.Round(v.Value, precision)}");
             }
         }
 
         Console.Write("> ");
     }
 
-    //using NewLineHelper;
-    public void evalCommand(string cmdInput)
+    // Entry point pro kalkulacku
+    public void inputHandler(string cmdInput)
     {
         kalkulOutput = "";
         if (cmdInput == null)
@@ -162,98 +193,14 @@ public class Menu
         cmdInput = cmdInput.ToLower().Trim();
         _command = new List<string>(cmdInput.Split());
 
-        // nejdriv evaluuj prikazy
-        switch (_command.ElementAtOrDefault(0))
-        {
-            case "var":
-                // help
-                if (_command.ElementAtOrDefault(1) == null)
-                {
-                    kalkulOutput += "Usage:".Ln();
-                    kalkulOutput += "\tnew <name> <val> \tcreate a new variable".Ln();
-                    kalkulOutput += "\t<name>\t\t\tedit the value of a variable".Ln();
-                    return;
-                }
-                // tvoř!
-                if (_command.ElementAtOrDefault(1) == "new")
-                {
-                    string name;
-                    double varValue;
-
-                    // bereme argumenty! 2->jmeno
-                    if (_command.ElementAtOrDefault(2) != null)
-                    {
-                        name = _command.ElementAtOrDefault(2)!;
-                    }
-                    // pojmenujem promennou
-                    else
-                    {
-                        Console.WriteLine("Jak si svoji proměnnou pojmenuješ?");
-                        // beru jen jmena bez mezer  
-                        name = Console.ReadLine()!.Split(" ")[0];
-                    }
-
-                    // zjistujeme, zda uz jmeno existuje, ci je to nejaky rezervovany string
-                    if (_variables.FindByName(name) != null ||
-                        _availableOperators.Contains(name) || _availableFunctions.Contains(name))
-                    {
-                        kalkulOutput += "Promenna s takovym nazvem uz existuje!".Ln();
-                        return;
-                    }
-
-                    // argument hodnota
-                    if (_command.ElementAtOrDefault(3) != null)
-                    {
-                        if (Double.TryParse(_command.ElementAtOrDefault(3), out varValue))
-                        {
-                            _variables.Add(new Variable(name, Math.Round(varValue, precision)));
-                            return;
-                        }
-                    }
-
-                    // jinak zjisti hodnotu
-                    Console.WriteLine("Hodnota promenne?");
-                    while (!Double.TryParse(Console.ReadLine(), out varValue)) ;
-                    _variables.Add(new Variable(name, Math.Round(varValue, precision)));
-
-                    return;
-                }
-                // najit promennou, kterou budu upravovat
-                if (_variables.FindByName(_command.ElementAtOrDefault(1)!) != null)
-                {
-                    double varValue;
-                    Variable usedVar = _variables.FindByName(_command.ElementAtOrDefault(1)!);
-                    // ctem input
-                    while (!Double.TryParse(Console.ReadLine(), out varValue)) ;
-                    usedVar.Value = varValue;
-                    return;
-
-                }
-                kalkulOutput += ("To neni nazev promenne!").Ln(); ;
-                return;
-
-            case "precision":
-                if (_command.ElementAtOrDefault(1) == null)
-                {
-                    kalkulOutput += "Usage:".Ln();
-                    kalkulOutput += "\t<num> precision in decimal".Ln();
-                    return;
-                }
-                break;
-
-            case "exit":
-                Environment.Exit(0);
-                break;
-            case "":
-                kalkulOutput += "\"help\" pro seznam prikazu".Ln();
-                return;
-        }
+        if (evalCommand() == true)
+            return;
 
         // pocitame!
-        string result;
-        if (Magic(_command, out result))
+        if (computer(_command))
         {
-            kalkulOutput += result;
+            kalkulOutput += _command[0];
+            return;
         }
         else
         {
@@ -263,11 +210,132 @@ public class Menu
         }
     }
 
-    // pocitanicko
-    public bool Magic(List<string> equation, out string stringOutput)
+    private bool evalCommand()
     {
-        stringOutput = "";
-        double output = 0;
+        // evaluuj prikazy
+        switch (_command.ElementAtOrDefault(0))
+        {
+            case "":
+                kalkulOutput += "\"help\" pro seznam prikazu".Ln();
+                return false;
+            case "help":
+                kalkulOutput += "Mezi každým tokenem musí být mezera, např: \"1 + 2\",".Ln();
+                kalkulOutput += "či: \"sqrt 2\"".Ln();
+                kalkulOutput += "".Ln();
+                kalkulOutput += "Dostupné funkce: ".Ln();
+                foreach (string fce in _availableFunctions)
+                {
+                    kalkulOutput += "\t" + fce.Ln();
+                }
+
+                kalkulOutput += "Dostupné operatory: ".Ln();
+                foreach (string fce in _availableOperators)
+                {
+                    kalkulOutput += "\t" + fce.Ln();
+                }
+
+                return true;
+            case "var":
+                // help
+                if (_command.ElementAtOrDefault(1) == null)
+                {
+                    kalkulOutput += "Usage: ".Ln();
+                    kalkulOutput += "\tvar <name> <value>".Ln();
+                    return false;
+                }
+
+                // najit promennou, kterou budu upravovat
+                // jestli uz neexistuje promenna, udelej novou
+                if (_variables.FindByName(_command.ElementAtOrDefault(1)!) == null)
+                {
+                    string name = "";
+                    double varValue;
+
+                    // precti argumenty! 1->jmeno
+                    if (_command.ElementAtOrDefault(1) != null)
+                    {
+                        name = _command.ElementAtOrDefault(1)!;
+                    }
+
+                    // zjistujeme, zda uz jmeno existuje, ci je to nejaky rezervovany string
+                    if (_availableOperators.Contains(name) || _availableFunctions.Contains(name))
+                    {
+                        kalkulOutput += "skibidi error".Ln();
+                        return false;
+                    }
+
+                    // argument hodnota
+                    if (_command.ElementAtOrDefault(2) != null)
+                    {
+                        if (Double.TryParse(_command.ElementAtOrDefault(2), out varValue))
+                        {
+                            _variables.Add(new Variable(name, Math.Round(varValue, precision)));
+                            return false;
+                        }
+                    }
+
+                    // jinak zjisti hodnotu
+                    Console.WriteLine("Hodnota promenne?");
+                    while (!Double.TryParse(Console.ReadLine(), out varValue)) ;
+                    _variables.Add(new Variable(name, Math.Round(varValue, precision)));
+                }
+                else
+                {
+                    double varValue;
+                    Variable usedVar = _variables.FindByName(_command.ElementAtOrDefault(1)!);
+
+                    // zkus parsnout argument, jestli to nevyjde, precti input uzivatele
+                    if (!Double.TryParse(_command.ElementAtOrDefault(2), out varValue))
+                    {
+                        // ctem input
+                        Console.WriteLine("Hodnota promenne?");
+                        while (!Double.TryParse(Console.ReadLine(), out varValue)) ;
+                    }
+                    usedVar.Value = varValue;
+                }
+                return true;
+
+            case "precision":
+                if (_command.ElementAtOrDefault(1) == null)
+                {
+                    kalkulOutput += "Usage:".Ln();
+                    kalkulOutput += "precision\t<num> of precision places".Ln();
+                    return false;
+                }
+                else
+                {
+                    if (!Int32.TryParse(_command.ElementAtOrDefault(1), out int _prec))
+                    {
+                        kalkulOutput += "neni cislo :(".Ln();
+                    }
+                    if (_prec > 12)
+                    {
+                        kalkulOutput += "big number! no!".Ln();
+                        return false;
+                    }
+                    precision = _prec;
+                    kalkulOutput += $"Precision set to {precision} places".Ln();
+                    return true;
+                }
+            case "tobase":
+                if (Compute.ToBase(_command) == false)
+                {
+                    kalkulOutput += "Usage:".Ln();
+                    kalkulOutput += "tobase\t<number> <base>".Ln();
+                    return false;
+                }
+                kalkulOutput = _command[0];
+                return true;
+            case "exit":
+                Environment.Exit(0);
+                break;
+        }
+        return false;
+    }
+
+    private bool computer(List<string> equation)
+    {
+        bool completed;
 
         /*
          * 1) Jako prvni nahradime nazvy promennych jejich hodnotami, at s nimi muzeme pocitat
@@ -277,57 +345,11 @@ public class Menu
          */
 
         // transformuj promenne na cisla 
-        for (int i = 0; i < equation.Count; i++)
-        {
-            Variable v = _variables.Find(x => x.Name == equation[i])!;
-            if (v != null)
-            {
-                equation[i] = v.Value.ToString();
-            }
-        }
+        evalVariables(equation);
 
-        // evaluuj funkce odzadu
-        for (int i = equation.Count - 1; i >= 0; i--)
-        // for (int i = 0; i < equation.Count; i++)
-        {
-            if (_availableFunctions.Contains(equation[i]))
-            {
-                switch (equation[i])
-                {
-                    // s tobase nemuzeme pouzivat nic jineho
-                    case "tobase":
-                        if (Compute.ToBase(equation, i) == false)
-                            return false;
-                        stringOutput = equation[i];
-                        return true;
-                    case "sin":
-                        if (Compute.Sin(equation, i) == false)
-                            return false;
-                        break;
-                    case "cos":
-                        if (Compute.Sin(equation, i) == false)
-                            return false;
-                        break;
-                    case "tan":
-                        if (Compute.Sin(equation, i) == false)
-                            return false;
-                        break;
-                    case "sqrt":
-                        if (Compute.Sqrt(equation, i) == false)
-                            return false;
-                        break;
-                    case "pow":
-                        break;
-                    case "frombase":
-                        if (Compute.FromBase(equation, i, out bool baseError) == false)
-                        {
-                            if (baseError == true) kalkulOutput = "Spatna base".Ln();
-                            return false;
-                        }
-                        break;
-                }
-            }
-        }
+        // evaluuj funkce (zezadu)
+        evalFunctions(equation, out completed);
+        if (completed == false) return false;
 
         /* poradi: * > % > / > + > - 
          * algoritmus:
@@ -338,7 +360,79 @@ public class Menu
          * 5) opakuj, dokud nevyzkousime vsechny operatory
          * -> v pripade, ze jsou vsechny vycerpany a velikost neni 1, je neco spatne
          */
+        return evalOperations(equation);
+    }
 
+    private void evalFunctions(List<string> equation, out bool returnValue)
+    {
+        returnValue = true;
+        for (int i = equation.Count - 1; i >= 0; i--)
+        // for (int i = 0; i < equation.Count; i++)
+        {
+            if (_availableFunctions.Contains(equation[i]))
+            {
+                switch (equation[i])
+                {
+                    // s tobase nemuzeme pouzivat nic jineho
+                    case "sin":
+                        if (Compute.Sin(equation, i) == false)
+                            returnValue = false;
+                        break;
+                    case "cos":
+                        if (Compute.Sin(equation, i) == false)
+                            returnValue = false;
+                        break;
+                    case "tan":
+                        if (Compute.Sin(equation, i) == false)
+                            returnValue = false;
+                        break;
+                    case "sqrt":
+                        if (Compute.Sqrt(equation, i) == false)
+                            returnValue = false;
+                        break;
+                    case "pow":
+                        if (Compute.Pow(equation, i) == false)
+                            returnValue = false;
+                        break;
+                    case "frombase":
+                        if (Compute.FromBase(equation, i, out bool baseError) == false)
+                        {
+                            kalkulOutput = "usage: <num> <base>".Ln();
+                            if (baseError == true) kalkulOutput = "Spatna base".Ln();
+                            returnValue = false;
+                        }
+                        break;
+                    case "log":
+                        if (Compute.Log(equation, i) == false)
+                            returnValue = false;
+                        break;
+                    case "floor":
+                        if (Compute.Floor(equation, i) == false)
+                            returnValue = false;
+                        break;
+                    case "ceil":
+                        if (Compute.Ceil(equation, i) == false)
+                            returnValue = false;
+                        break;
+                }
+            }
+        }
+    }
+
+    private void evalVariables(List<string> equation)
+    {
+        for (int i = 0; i < equation.Count; i++)
+        {
+            Variable v = _variables.Find(x => x.Name == equation[i])!;
+            if (v != null)
+            {
+                equation[i] = v.Value.ToString();
+            }
+        }
+    }
+
+    private bool evalOperations(List<string> equation)
+    {
         // vsechny operatory postupne
         foreach (string operatorSearched in _availableOperators)
         {
@@ -350,7 +444,7 @@ public class Menu
                 if (operatorSearched == element)
                 {
                     // nasli jsme operator, sezeneme cisla vedle a provedeme vypocet
-                    double a, b;
+                    double a, b, output;
                     if (!Double.TryParse(equation.ElementAtOrDefault(i - 1), out a))
                         return false;
                     if (!Double.TryParse(equation.ElementAtOrDefault(i + 1), out b))
@@ -370,6 +464,8 @@ public class Menu
                         case "/":
                             output = a / b;
                             break;
+                        default:
+                            return false;
                     }
 
                     equation[i] = output.ToString();
@@ -385,7 +481,7 @@ public class Menu
                         kalkulOutput += "\"help\" pro seznam prikazu";
                         return false;
                     }
-                    stringOutput = Math.Round(a, precision).ToString();
+                    equation[0] = Math.Round(a, precision).ToString();
                     return true;
                 }
             }
@@ -406,7 +502,7 @@ class Program
         while (true)
         {
             menu.render();
-            menu.evalCommand(Console.ReadLine() ?? "");
+            menu.inputHandler(Console.ReadLine() ?? "");
         }
 
     }
