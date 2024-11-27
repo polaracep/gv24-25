@@ -1,0 +1,42 @@
+public class Game
+{
+    static bool StartGame(PlayingField field, Player player_1, Player player_2)
+    {
+
+        return true;
+    }
+
+    public static bool gameLoop()
+    {
+
+        return true;
+    }
+
+}
+
+class PlayingField
+{
+
+
+}
+
+abstract class Player
+{
+    public Player()
+    {
+    }
+
+}
+
+class PlayerHuman : Player
+{
+
+
+}
+
+class PlayerComputer : Player
+{
+
+
+}
+
