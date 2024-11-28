@@ -1,15 +1,16 @@
 public class Game
 {
-    public string messageLog { get; set; } = "";
+    public static string messageLog { get; set; } = "";
+    private Player player1;
+    private Player player2;
 
-
-    static bool StartGame(PlayingField field, Player player_1, Player player_2)
+    public Game(Player player_1, Player player_2)
     {
-
-        return true;
+        this.player1 = player_1;
+        this.player2 = player_2;
     }
 
-    public static bool GameLoop()
+    public bool GameLoop()
     {
         // Hrac zadava tah
 
@@ -18,11 +19,43 @@ public class Game
 
         // opakujem dokud jeden hrac nema zadny lode
 
+        (int x, int y) cPos = Console.GetCursorPosition();
+        Console.BackgroundColor = ConsoleColor.Red;
+        Console.Write("󰩷");
+        Console.ResetColor();
+
+        Console.SetCursorPosition(cPos.x, cPos.y);
+        // Cekame
+        ConsoleKeyInfo input = Console.ReadKey();
+        player1.view.RenderField(player2.field);
+
+        switch (input.Key)
+        {
+            case (ConsoleKey.UpArrow):
+                Console.SetCursorPosition(cPos.x, cPos.y - 1);
+                break;
+            case (ConsoleKey.DownArrow):
+                Console.SetCursorPosition(cPos.x, cPos.y + 1);
+                break;
+            case (ConsoleKey.LeftArrow):
+                Console.SetCursorPosition(cPos.x - 1, cPos.y);
+                break;
+            case (ConsoleKey.RightArrow):
+                Console.SetCursorPosition(cPos.x + 1, cPos.y);
+                break;
+            default:
+
+                break;
+
+        }
+        if (Console.GetCursorPosition().Left == player1.field.screenPosX - 1 ||
+                Console.GetCursorPosition().Top <= player1.field.screenPosY - 1)
+            Console.SetCursorPosition(cPos.x, cPos.y);
+
         return true;
     }
 
-
-    public static void Render()
+    public void Render()
     {
         //PlayingField.field[0,]
 
@@ -34,28 +67,31 @@ public class PlayingField
 {
     // klic: 
     // w - voda
-    //
 
-    public char[] availableTiles = { 'w', 'b' };
+    public String[] availableTiles = { "w", "b" };
 
     public int sizeX { get; private set; }
     public int sizeY { get; private set; }
+    public int screenPosX { get; set; }
+    public int screenPosY { get; set; }
 
-    public char[,] field { get; private set; }
+    // public String[,] _field { get; private set; }
+    private Tile[,] field { get; set; }
 
-    public PlayingField(int x, int y)
+    public PlayingField(int w, int h)
     {
-        sizeX = x;
-        sizeY = y;
-        field = new char[sizeX, sizeY];
+        sizeX = w;
+        sizeY = h;
+        field = new Tile[w, h];
 
         // nacpat vsude vodu
-        for (int _x = 0; _x < x; _x++)
-            for (int _y = 0; _y < y; _y++)
-                field[_x, _y] = 'w';
+        for (int _x = 0; _x < w; _x++)
+            for (int _y = 0; _y < h; _y++)
+                field[_x, _y] = new Tile("~", ConsoleColor.White, ConsoleColor.Blue);
+        // ~ ; 󰞍 ; 󰼮
     }
 
-    public void SetTile(char tile, int x, int y)
+    public void SetTile(String tile, int x, int y)
     {
         if (x >= sizeX || y >= sizeY)
             throw new Exception("Tile out of bounds");
@@ -63,10 +99,10 @@ public class PlayingField
         if (!availableTiles.Contains(tile))
             throw new Exception("Unknown tile");
 
-        field[x, y] = tile;
+        field[x, y].character = tile; ;
     }
 
-    public char GetTile(int x, int y)
+    public Tile GetTile(int x, int y)
     {
         if (x >= sizeX || y >= sizeY)
             throw new Exception("Tile out of bounds");
@@ -92,26 +128,42 @@ public class PlayingField
     {
         return field.Length;
     }
+
+}
+
+public struct Tile
+{
+    public Tile(string character, ConsoleColor fg, ConsoleColor bg)
+    {
+        this.character = character;
+        this.fg = fg;
+        this.bg = bg;
+    }
+    public string character = " ";
+    public ConsoleColor fg = ConsoleColor.White;
+    public ConsoleColor bg = ConsoleColor.Black;
 }
 
 public class Player
 {
     private int pts = 0;
     public PlayingField field { get; private set; }
+    public PlayerView view { get; private set; }
 
-    public Player(PlayingField myField)
+    public Player(PlayingField _field, PlayerView _view)
     {
-        this.field = myField;
+        this.field = _field;
+        this.view = _view;
     }
 }
 
 public class PlayerHuman : Player
 {
-    public PlayerHuman(PlayingField myField) : base(myField) { }
+    public PlayerHuman(PlayingField _field, PlayerView _view) : base(_field, _view) { }
 }
 
 public class PlayerComputer : Player
 {
-    public PlayerComputer(PlayingField myField) : base(myField) { }
+    public PlayerComputer(PlayingField _field, PlayerView _view) : base(_field, _view) { }
 }
 
