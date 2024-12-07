@@ -15,10 +15,10 @@ class Program
         PlayerView uiPlayer = new PlayerView(fieldPlayer, fieldComputer);
         PlayerView uiPc = new PlayerView(fieldComputer, fieldPlayer);
 
-        PlayerHuman player = new PlayerHuman(fieldPlayer, uiPlayer);
+        PlayerHuman userPlayer = new PlayerHuman(fieldPlayer, uiPlayer);
         PlayerComputer pc = new PlayerComputer(fieldComputer, uiPc);
 
-        fieldPlayer.SetTile("b", 3, 3);
+        fieldPlayer.SetTile("A", 3, 3);
         //fieldPlayer.PrintField();
 
         fieldComputer.SetTile("b", 6, 6);
@@ -26,13 +26,15 @@ class Program
 
         //ui.CreateUI();
         uiPlayer.RenderAll();
-        uiPlayer.RenderField(player.field);
-        uiPlayer.RenderField(pc.field);
+        uiPlayer.RenderFields();
 
-        Game game = new Game(player, pc);
+        Game game = new Game(userPlayer, pc);
+        Console.SetCursorPosition(userPlayer.view.self_pos.X, userPlayer.view.self_pos.Y);
+
 
         while (isPlaying)
         {
+
             game.GameLoop();
         }
     }

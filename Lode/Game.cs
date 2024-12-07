@@ -4,54 +4,81 @@ public class Game
     private Player player1;
     private Player player2;
 
+    private Player[] players;
+
     public Game(Player player_1, Player player_2)
     {
         this.player1 = player_1;
         this.player2 = player_2;
+        players = [player_1, player_2];
     }
+
+    private int playerIndex;
 
     public bool GameLoop()
     {
+        // zmena hrace haha
+        playerIndex = 1 - playerIndex;
+
+        Player currentPlayer = players[playerIndex];
+
         // Hrac zadava tah
+        currentPlayer.NextMove();
 
         // Check trefy
         // -> Hrac strili znova pokud trefil
 
         // opakujem dokud jeden hrac nema zadny lode
 
-        (int x, int y) cPos = Console.GetCursorPosition();
-        Console.BackgroundColor = ConsoleColor.Red;
-        Console.Write("󰩷");
-        Console.ResetColor();
-
-        Console.SetCursorPosition(cPos.x, cPos.y);
-        // Cekame
-        ConsoleKeyInfo input = Console.ReadKey();
-        player1.view.RenderField(player2.field);
-
-        switch (input.Key)
+        bool aimDone = false;
+        while (!aimDone)
         {
-            case (ConsoleKey.UpArrow):
-                Console.SetCursorPosition(cPos.x, cPos.y - 1);
-                break;
-            case (ConsoleKey.DownArrow):
-                Console.SetCursorPosition(cPos.x, cPos.y + 1);
-                break;
-            case (ConsoleKey.LeftArrow):
-                Console.SetCursorPosition(cPos.x - 1, cPos.y);
-                break;
-            case (ConsoleKey.RightArrow):
-                Console.SetCursorPosition(cPos.x + 1, cPos.y);
-                break;
-            default:
+            (int x, int y) cPos = Console.GetCursorPosition();
+            Console.BackgroundColor = ConsoleColor.Red;
+            Console.Write("󰩷");
+            Console.ResetColor();
 
-                break;
+            Console.SetCursorPosition(cPos.x, cPos.y);
+            // Cekame
+            ConsoleKeyInfo input = Console.ReadKey();
+            player1.view.RenderFields();
+
+            switch (input.Key)
+            {
+                case (ConsoleKey.K):
+                case (ConsoleKey.UpArrow):
+                    Console.SetCursorPosition(cPos.x, cPos.y - 1);
+                    break;
+                case (ConsoleKey.J):
+                case (ConsoleKey.DownArrow):
+                    Console.SetCursorPosition(cPos.x, cPos.y + 1);
+                    break;
+                case (ConsoleKey.H):
+                case (ConsoleKey.LeftArrow):
+                    Console.SetCursorPosition(cPos.x - 1, cPos.y);
+                    break;
+                case (ConsoleKey.L):
+                case (ConsoleKey.RightArrow):
+                    Console.SetCursorPosition(cPos.x + 1, cPos.y);
+                    break;
+                case (ConsoleKey.Enter):
+                    Console.SetCursorPosition(1, 1);
+                    Console.Write(playerIndex);
+                    aimDone = true;
+                    break;
+                default:
+                    Console.SetCursorPosition(cPos.x, cPos.y);
+                    break;
+
+            }
+            // hmm
+            if (Console.GetCursorPosition().Left <= currentPlayer.view.self_pos.X - 1 ||
+                    Console.GetCursorPosition().Left >= currentPlayer.view.self_field.sizeX + player1.view.self_pos.X ||
+                    Console.GetCursorPosition().Top <= currentPlayer.view.self_pos.Y - 1 ||
+                    Console.GetCursorPosition().Top >= currentPlayer.view.self_field.sizeY + player1.view.self_pos.Y)
+                Console.SetCursorPosition(cPos.x, cPos.y);
 
         }
-        if (Console.GetCursorPosition().Left == player1.field.screenPosX - 1 ||
-                Console.GetCursorPosition().Top <= player1.field.screenPosY - 1)
-            Console.SetCursorPosition(cPos.x, cPos.y);
-
         return true;
     }
 
@@ -68,12 +95,10 @@ public class PlayingField
     // klic: 
     // w - voda
 
-    public String[] availableTiles = { "w", "b" };
+    public String[] availableTiles = { "w", "b", "A" };
 
     public int sizeX { get; private set; }
     public int sizeY { get; private set; }
-    public int screenPosX { get; set; }
-    public int screenPosY { get; set; }
 
     // public String[,] _field { get; private set; }
     private Tile[,] field { get; set; }
@@ -87,7 +112,7 @@ public class PlayingField
         // nacpat vsude vodu
         for (int _x = 0; _x < w; _x++)
             for (int _y = 0; _y < h; _y++)
-                field[_x, _y] = new Tile("~", ConsoleColor.White, ConsoleColor.Blue);
+                field[_x, _y] = new Tile("~", ConsoleColor.White, ConsoleColor.Black);
         // ~ ; 󰞍 ; 󰼮
     }
 
@@ -144,7 +169,7 @@ public struct Tile
     public ConsoleColor bg = ConsoleColor.Black;
 }
 
-public class Player
+public abstract class Player
 {
     private int pts = 0;
     public PlayingField field { get; private set; }
@@ -155,15 +180,29 @@ public class Player
         this.field = _field;
         this.view = _view;
     }
+
+    public abstract void NextMove();
 }
 
 public class PlayerHuman : Player
 {
     public PlayerHuman(PlayingField _field, PlayerView _view) : base(_field, _view) { }
+
+    public override void NextMove()
+    {
+        (int X, int Y) e_pos = this.view.enemy_pos;
+        Console.SetCursorPosition(e_pos.X, e_pos.Y);
+    }
 }
 
 public class PlayerComputer : Player
 {
     public PlayerComputer(PlayingField _field, PlayerView _view) : base(_field, _view) { }
+
+    public override void NextMove()
+    {
+        (int X, int Y) e_pos = this.view.enemy_pos;
+        Console.SetCursorPosition(e_pos.X, e_pos.Y);
+    }
 }
 

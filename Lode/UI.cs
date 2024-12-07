@@ -5,8 +5,16 @@ public class PlayerView
 
     private Tile[,] screen;
 
+    public PlayingField self_field { get; private set; }
+    public (int X, int Y) self_pos;
+
+    public PlayingField enemy_field { get; private set; }
+    public (int X, int Y) enemy_pos;
+
     public PlayerView(PlayingField f_self, PlayingField f_enemy)
     {
+        this.self_field = f_self;
+        this.enemy_field = f_enemy;
         Console.CursorVisible = false;
         // gg ( ͡° ͜ʖ ͡°)
         if (f_self.sizeX != f_enemy.sizeX) throw new Exception();
@@ -32,12 +40,14 @@ public class PlayerView
         int paddingMid = (wX - (2 * fieldSizeX)) - (2 * paddingLR);
 
         // Leve pole
-        f_self.screenPosX = paddingLR + 1;
-        f_self.screenPosY = paddingTop + 1;
+        self_pos.X = paddingLR + 1;
+        self_pos.Y = paddingTop + 1;
         CreateOutline(paddingLR, paddingTop, fieldSizeX, fieldSizeY);
+
         // Prave pole
-        f_enemy.screenPosX = paddingLR + fieldSizeX + paddingMid + 1;
-        f_enemy.screenPosY = paddingTop + 1;
+        enemy_pos.X = paddingLR + fieldSizeX + paddingMid + 1;
+        enemy_pos.Y = paddingTop + 1;
+
         CreateOutline(paddingLR + fieldSizeX + paddingMid, paddingTop, fieldSizeX, fieldSizeY);
 
         // Dolni UI
@@ -67,16 +77,29 @@ public class PlayerView
 
     }
 
-    public void RenderField(PlayingField field)
+    public void RenderFields()
     {
-        Console.BackgroundColor = ConsoleColor.Blue;
-        Console.ForegroundColor = ConsoleColor.White;
-        for (int i = 0; i < field.sizeY; i++)
+        for (int i = 0; i < this.self_field.sizeY; i++)
         {
-            Console.SetCursorPosition(field.screenPosX, field.screenPosY + i);
-            for (int j = 0; j < field.sizeX; j++)
+            Console.SetCursorPosition(this.self_pos.X, this.self_pos.Y + i);
+            for (int j = 0; j < this.self_field.sizeX; j++)
             {
-                Console.Write(field.GetTile(j, i).character);
+                Tile t = this.self_field.GetTile(j, i);
+                Console.ForegroundColor = t.fg;
+                Console.BackgroundColor = t.bg;
+                Console.Write(t.character);
+            }
+        }
+
+        for (int i = 0; i < this.enemy_field.sizeY; i++)
+        {
+            Console.SetCursorPosition(this.enemy_pos.X, this.enemy_pos.Y + i);
+            for (int j = 0; j < this.enemy_field.sizeX; j++)
+            {
+                Tile t = this.enemy_field.GetTile(j, i);
+                Console.ForegroundColor = t.fg;
+                Console.BackgroundColor = t.bg;
+                Console.Write(t.character);
             }
         }
         Console.ResetColor();
