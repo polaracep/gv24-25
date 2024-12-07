@@ -7,6 +7,7 @@ class Program
     {
         Console.Clear();
         Console.CursorVisible = true;
+
         bool isPlaying = true;
 
         PlayingField fieldPlayer = new PlayingField(10, 10);

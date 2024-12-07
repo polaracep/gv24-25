@@ -27,7 +27,7 @@ public class Game
         Console.SetCursorPosition(cPos.x, cPos.y);
         // Cekame
         ConsoleKeyInfo input = Console.ReadKey();
-        player1.view.RenderField(player2.field);
+        player1.view.RenderField(player1.field);
 
         switch (input.Key)
         {
@@ -139,6 +139,7 @@ public struct Tile
         this.fg = fg;
         this.bg = bg;
     }
+
     public string character = " ";
     public ConsoleColor fg = ConsoleColor.White;
     public ConsoleColor bg = ConsoleColor.Black;
