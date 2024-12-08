@@ -12,29 +12,25 @@ class Program
         PlayingField fieldPlayer = new PlayingField(10, 10);
         PlayingField fieldComputer = new PlayingField(10, 10);
 
-        PlayerView uiPlayer = new PlayerView(fieldPlayer, fieldComputer);
-        PlayerView uiPc = new PlayerView(fieldComputer, fieldPlayer);
+        PlayerView uiPlayer = new PlayerView(fieldPlayer);
+        PlayerView uiPc = new PlayerView(fieldComputer);
 
         PlayerHuman userPlayer = new PlayerHuman(fieldPlayer, uiPlayer);
         PlayerComputer pc = new PlayerComputer(fieldComputer, uiPc);
 
-        fieldPlayer.SetTile("A", 3, 3);
+        fieldPlayer.SetTile(new Tile("A", ConsoleColor.Red, ConsoleColor.Blue), 3, 3);
         //fieldPlayer.PrintField();
 
-        fieldComputer.SetTile("b", 6, 6);
+        fieldComputer.SetTile(new Tile("b", ConsoleColor.Red, ConsoleColor.Blue), 1, 1);
         //fieldComputer.PrintField();
 
-        //ui.CreateUI();
-        uiPlayer.RenderAll();
-        uiPlayer.RenderFields();
+        Renderer.RenderAll(uiPlayer);
+        Renderer.RenderFields(uiPlayer);
 
         Game game = new Game(userPlayer, pc);
-        Console.SetCursorPosition(userPlayer.view.self_pos.X, userPlayer.view.self_pos.Y);
-
 
         while (isPlaying)
         {
-
             game.GameLoop();
         }
     }

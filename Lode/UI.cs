@@ -1,28 +1,37 @@
+public enum ViewSide
+{
+    MY,
+    ENEMY,
+}
+
 public class PlayerView
 {
     public int wX { get; private set; } = 48;
     public int wY { get; private set; } = 24;
 
-    private Tile[,] screen;
+    public Tile[,] screen { get; private set; }
 
-    public PlayingField self_field { get; private set; }
-    public (int X, int Y) self_pos;
+    public PlayingField myField { get; private set; }
+    public (int X, int Y) myFieldPos { get; private set; }
 
-    public PlayingField enemy_field { get; private set; }
-    public (int X, int Y) enemy_pos;
+    public PlayingField enemyField { get; private set; }
+    public (int X, int Y) enemyFieldPos { get; private set; }
 
-    public PlayerView(PlayingField f_self, PlayingField f_enemy)
+    public (int X, int Y) cursorPos { get; private set; }
+
+
+    public PlayerView(PlayingField fSelf)
     {
-        this.self_field = f_self;
-        this.enemy_field = f_enemy;
+        this.myField = fSelf;
+        this.enemyField = new PlayingField(10, 10);
         Console.CursorVisible = false;
         // gg ( ͡° ͜ʖ ͡°)
-        if (f_self.sizeX != f_enemy.sizeX) throw new Exception();
-        if (f_self.sizeY != f_enemy.sizeY) throw new Exception();
+        if (fSelf.sizeX != this.enemyField.sizeX) throw new Exception();
+        if (fSelf.sizeY != this.enemyField.sizeY) throw new Exception();
 
         // math math math!!
-        int fieldSizeX = f_self.sizeX + 2; // misto na carecky
-        int fieldSizeY = f_self.sizeY + 2;
+        int fieldSizeX = fSelf.sizeX + 2; // misto na carecky
+        int fieldSizeY = fSelf.sizeY + 2;
 
         // 3: misto nahore
         // 2: misto na carecky
@@ -39,14 +48,18 @@ public class PlayerView
         // padding vevnitr = 2*(size-p)
         int paddingMid = (wX - (2 * fieldSizeX)) - (2 * paddingLR);
 
+        // c# :(
+        (int, int) achjoPomoc;
         // Leve pole
-        self_pos.X = paddingLR + 1;
-        self_pos.Y = paddingTop + 1;
+        achjoPomoc.Item1 = paddingLR + 1;
+        achjoPomoc.Item2 = paddingTop + 1;
+        myFieldPos = achjoPomoc;
         CreateOutline(paddingLR, paddingTop, fieldSizeX, fieldSizeY);
 
         // Prave pole
-        enemy_pos.X = paddingLR + fieldSizeX + paddingMid + 1;
-        enemy_pos.Y = paddingTop + 1;
+        achjoPomoc.Item1 = paddingLR + fieldSizeX + paddingMid + 1;
+        achjoPomoc.Item2 = paddingTop + 1;
+        enemyFieldPos = achjoPomoc;
 
         CreateOutline(paddingLR + fieldSizeX + paddingMid, paddingTop, fieldSizeX, fieldSizeY);
 
@@ -62,47 +75,6 @@ public class PlayerView
         WriteText(paddingLR + paddingMid + fieldSizeX + 2, 2, "Player 2");
 
 
-    }
-
-    public void RenderAll()
-    {
-        for (int i = 0; i < wY; i++)
-        {
-            for (int j = 0; j < wX; j++)
-            {
-                Console.Write(this.screen[j, i].character);
-            }
-            Console.WriteLine();
-        }
-
-    }
-
-    public void RenderFields()
-    {
-        for (int i = 0; i < this.self_field.sizeY; i++)
-        {
-            Console.SetCursorPosition(this.self_pos.X, this.self_pos.Y + i);
-            for (int j = 0; j < this.self_field.sizeX; j++)
-            {
-                Tile t = this.self_field.GetTile(j, i);
-                Console.ForegroundColor = t.fg;
-                Console.BackgroundColor = t.bg;
-                Console.Write(t.character);
-            }
-        }
-
-        for (int i = 0; i < this.enemy_field.sizeY; i++)
-        {
-            Console.SetCursorPosition(this.enemy_pos.X, this.enemy_pos.Y + i);
-            for (int j = 0; j < this.enemy_field.sizeX; j++)
-            {
-                Tile t = this.enemy_field.GetTile(j, i);
-                Console.ForegroundColor = t.fg;
-                Console.BackgroundColor = t.bg;
-                Console.Write(t.character);
-            }
-        }
-        Console.ResetColor();
     }
 
     public Tile GetPixel(int x, int y)
@@ -139,4 +111,99 @@ public class PlayerView
         }
     }
 
+    public void WriteTile(int x, int y, Tile t)
+    {
+        screen[x, y] = t;
+    }
+
+}
+
+public static class Renderer
+{
+
+    public static void RenderAll(PlayerView v)
+    {
+        for (int i = 0; i < v.wY; i++)
+        {
+            for (int j = 0; j < v.wX; j++)
+            {
+                Console.Write(v.screen[j, i].character);
+            }
+            Console.WriteLine();
+        }
+
+    }
+
+    public static void RenderFields(PlayerView v)
+    {
+        for (int i = 0; i < v.myField.sizeY; i++)
+        {
+            Console.SetCursorPosition(v.myFieldPos.X, v.myFieldPos.Y + i);
+            for (int j = 0; j < v.myField.sizeX; j++)
+            {
+                Tile t = v.myField.GetTile(j, i);
+                Console.ForegroundColor = t.fg;
+                Console.BackgroundColor = t.bg;
+                Console.Write(t.character);
+            }
+        }
+
+        for (int i = 0; i < v.enemyField.sizeY; i++)
+        {
+            Console.SetCursorPosition(v.enemyFieldPos.X, v.enemyFieldPos.Y + i);
+            for (int j = 0; j < v.enemyField.sizeX; j++)
+            {
+                Tile t = v.enemyField.GetTile(j, i);
+                Console.ForegroundColor = t.fg;
+                Console.BackgroundColor = t.bg;
+                Console.Write(t.character);
+            }
+        }
+        Console.ResetColor();
+    }
+
+    public static bool RenderCursor(PlayerView v, int x, int y, ViewSide side)
+    {
+        (int X, int Y) fPos;
+
+        if (side == ViewSide.MY)
+        {
+            // out of bounds
+            if ((x > v.myField.sizeX) ||
+                (y > v.myField.sizeY) ||
+                (x < 0) ||
+                (y < 0))
+            {
+                return false;
+            }
+
+            fPos = (v.myFieldPos.X, v.myFieldPos.Y);
+        }
+        else if (side == ViewSide.ENEMY)
+        {
+            // out of bounds
+            if ((x > v.enemyField.sizeX) ||
+                (y > v.enemyField.sizeY) ||
+                (x < 0) ||
+                (y < 0))
+            {
+                return false;
+            }
+
+            fPos = (v.enemyFieldPos.X, v.enemyFieldPos.Y);
+        }
+        else
+        {
+            return false;
+        }
+
+        Renderer.RenderFields(v);
+        Console.SetCursorPosition(fPos.X + x, fPos.Y + y);
+        Console.BackgroundColor = ConsoleColor.Red;
+        Console.ForegroundColor = ConsoleColor.White;
+        Console.Write("󰩷");
+        Console.ResetColor();
+
+        return true;
+    }
 }
