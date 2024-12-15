@@ -11,10 +11,10 @@ public class PlayerView
 
     public Tile[,] screen { get; private set; }
 
-    public PlayingField myField { get; private set; }
+    public PlayingField myFieldScreen { get; private set; }
     public (int X, int Y) myFieldPos { get; private set; }
 
-    public PlayingField enemyField { get; private set; }
+    public PlayingField enemyFieldScreen { get; private set; }
     public (int X, int Y) enemyFieldPos { get; private set; }
 
     public (int X, int Y) cursorPos { get; private set; }
@@ -22,12 +22,12 @@ public class PlayerView
 
     public PlayerView(PlayingField fSelf)
     {
-        this.myField = fSelf;
-        this.enemyField = new PlayingField(10, 10);
+        this.myFieldScreen = fSelf;
+        this.enemyFieldScreen = new PlayingField(10, 10);
         Console.CursorVisible = false;
         // gg ( ͡° ͜ʖ ͡°)
-        if (fSelf.sizeX != this.enemyField.sizeX) throw new Exception();
-        if (fSelf.sizeY != this.enemyField.sizeY) throw new Exception();
+        if (fSelf.sizeX != this.enemyFieldScreen.sizeX) throw new Exception();
+        if (fSelf.sizeY != this.enemyFieldScreen.sizeY) throw new Exception();
 
         // math math math!!
         int fieldSizeX = fSelf.sizeX + 2; // misto na carecky
@@ -116,6 +116,11 @@ public class PlayerView
         screen[x, y] = t;
     }
 
+    // result of spaghetti code :))
+    public void UpdateField(PlayingField reload)
+    {
+        this.myFieldScreen = reload;
+    }
 }
 
 public static class Renderer
@@ -136,24 +141,24 @@ public static class Renderer
 
     public static void RenderFields(PlayerView v)
     {
-        for (int i = 0; i < v.myField.sizeY; i++)
+        for (int i = 0; i < v.myFieldScreen.sizeY; i++)
         {
             Console.SetCursorPosition(v.myFieldPos.X, v.myFieldPos.Y + i);
-            for (int j = 0; j < v.myField.sizeX; j++)
+            for (int j = 0; j < v.myFieldScreen.sizeX; j++)
             {
-                Tile t = v.myField.GetTile(j, i);
+                Tile t = v.myFieldScreen.GetTile(j, i);
                 Console.ForegroundColor = t.fg;
                 Console.BackgroundColor = t.bg;
                 Console.Write(t.character);
             }
         }
 
-        for (int i = 0; i < v.enemyField.sizeY; i++)
+        for (int i = 0; i < v.enemyFieldScreen.sizeY; i++)
         {
             Console.SetCursorPosition(v.enemyFieldPos.X, v.enemyFieldPos.Y + i);
-            for (int j = 0; j < v.enemyField.sizeX; j++)
+            for (int j = 0; j < v.enemyFieldScreen.sizeX; j++)
             {
-                Tile t = v.enemyField.GetTile(j, i);
+                Tile t = v.enemyFieldScreen.GetTile(j, i);
                 Console.ForegroundColor = t.fg;
                 Console.BackgroundColor = t.bg;
                 Console.Write(t.character);
@@ -162,15 +167,15 @@ public static class Renderer
         Console.ResetColor();
     }
 
-    public static bool RenderCursor(PlayerView v, int x, int y, ViewSide side)
+    public static bool RenderCursor(PlayerView v, int x, int y, ViewSide side, Tile cursorAppearance)
     {
         (int X, int Y) fPos;
 
         if (side == ViewSide.MY)
         {
             // out of bounds
-            if ((x > v.myField.sizeX) ||
-                (y > v.myField.sizeY) ||
+            if ((x > v.myFieldScreen.sizeX) ||
+                (y > v.myFieldScreen.sizeY) ||
                 (x < 0) ||
                 (y < 0))
             {
@@ -182,8 +187,8 @@ public static class Renderer
         else if (side == ViewSide.ENEMY)
         {
             // out of bounds
-            if ((x > v.enemyField.sizeX) ||
-                (y > v.enemyField.sizeY) ||
+            if ((x > v.enemyFieldScreen.sizeX) ||
+                (y > v.enemyFieldScreen.sizeY) ||
                 (x < 0) ||
                 (y < 0))
             {
@@ -199,11 +204,37 @@ public static class Renderer
 
         Renderer.RenderFields(v);
         Console.SetCursorPosition(fPos.X + x, fPos.Y + y);
-        Console.BackgroundColor = ConsoleColor.Red;
-        Console.ForegroundColor = ConsoleColor.White;
-        Console.Write("󰩷");
+        Console.BackgroundColor = cursorAppearance.bg;
+        Console.ForegroundColor = cursorAppearance.fg;
+        Console.Write(cursorAppearance.character);
         Console.ResetColor();
 
+        return true;
+    }
+
+    public static bool RenderBoatPlacement(PlayerView v, int x, int y, Boat boat)
+    {
+        // pomoc
+        int a = 0, b = 0;
+        if (boat.rotation == Rotation.LEFT)
+            a = 1;
+        if (boat.rotation == Rotation.DOWN)
+            b = 1;
+
+        for (int i = 0; i < boat.size; i++)
+        {
+            Console.SetCursorPosition(v.myFieldPos.X + x + (a * i), v.myFieldPos.Y + y + (b * i));
+            Console.BackgroundColor = boat.appearance.bg;
+            Console.ForegroundColor = boat.appearance.fg;
+
+            // out of bounds
+            if ((x + (a * i)) > 9 || (y + (b * i) > 9))
+            {
+                return false;
+            }
+            Console.Write(boat.appearance.character);
+            Console.ResetColor();
+        }
         return true;
     }
 }

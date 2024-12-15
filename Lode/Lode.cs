@@ -18,16 +18,21 @@ class Program
         PlayerHuman userPlayer = new PlayerHuman(fieldPlayer, uiPlayer);
         PlayerComputer pc = new PlayerComputer(fieldComputer, uiPc);
 
-        fieldPlayer.SetTile(new Tile("A", ConsoleColor.Red, ConsoleColor.Blue), 3, 3);
-        //fieldPlayer.PrintField();
+        Boat[] playerBoats = {
+            new SimpleBoat((0, 0), Rotation.DOWN),
+            new SimpleBoat((1, 1), Rotation.DOWN),
+        };
 
-        fieldComputer.SetTile(new Tile("b", ConsoleColor.Red, ConsoleColor.Blue), 1, 1);
-        //fieldComputer.PrintField();
+        // pc.PlaceBoats(playerBoats);
 
+        // uiPlayer.UpdateField(fieldPlayer);
+
+        Game game = new Game(pc, userPlayer);
         Renderer.RenderAll(uiPlayer);
         Renderer.RenderFields(uiPlayer);
 
-        Game game = new Game(userPlayer, pc);
+        game.Setup();
+        userPlayer.PlaceBoats(playerBoats);
 
         while (isPlaying)
         {
