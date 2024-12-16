@@ -27,3 +27,21 @@ class SimpleBoat : Boat
         this.size = 2;
     }
 }
+
+class LongerBoat : Boat
+{
+    public LongerBoat((int x, int y) _startPos, Rotation rot) :
+        base(_startPos, rot, new Tile("T", ConsoleColor.Cyan, ConsoleColor.DarkGreen))
+    {
+        this.size = 3;
+    }
+}
+
+class LongestBoat : Boat
+{
+    public LongestBoat((int x, int y) _startPos, Rotation rot) :
+        base(_startPos, rot, new Tile("T", ConsoleColor.Magenta, ConsoleColor.DarkGreen))
+    {
+        this.size = 5;
+    }
+}

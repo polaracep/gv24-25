@@ -16,13 +16,19 @@ class Program
         PlayerView uiPc = new PlayerView(fieldComputer);
 
         PlayerHuman userPlayer = new PlayerHuman(fieldPlayer, uiPlayer);
-        PlayerComputer pc = new PlayerComputer(fieldComputer, uiPc);
+        // PlayerComputer pc = new PlayerComputer(fieldComputer, uiPc);
+        PlayerHuman pc = new PlayerHuman(fieldComputer, uiPc);
 
         Boat[] playerBoats = {
             new SimpleBoat((0, 0), Rotation.DOWN),
-            new SimpleBoat((1, 1), Rotation.DOWN),
+            new SimpleBoat((0, 0), Rotation.DOWN),
+            new LongerBoat((0, 0), Rotation.DOWN),
+            new LongestBoat((0, 0), Rotation.DOWN),
         };
 
+        Boat[] pcBoats = {
+            new SimpleBoat((0, 0), Rotation.DOWN),
+        };
         // pc.PlaceBoats(playerBoats);
 
         // uiPlayer.UpdateField(fieldPlayer);
@@ -33,6 +39,7 @@ class Program
 
         game.Setup();
         userPlayer.PlaceBoats(playerBoats);
+        pc.PlaceBoats(pcBoats);
 
         while (isPlaying)
         {

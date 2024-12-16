@@ -52,6 +52,7 @@ public class Game
             }
             else
             {
+                Console.WriteLine(uncoveredTile);
                 break;
             }
         }
@@ -342,6 +343,60 @@ public class PlayerComputer : Player
         return (0, 0);
     }
 
-    public override void PlaceBoats(Boat[] placedBoats) { }
+    public override void PlaceBoats(Boat[] placeableBoats)
+    {
+        boats = placeableBoats;
+
+        Random rand = new Random();
+        foreach (Boat boat in boats)
+        {
+            while (true)
+            {
+                bool achjo = false;
+                while (!achjo)
+                {
+                    Console.Write(".");
+                    int r = rand.Next(0, boat.size);
+                    int u = rand.Next(0, boat.size);
+                    int a = 0, b = 0;
+                    if (rand.Next(0, 2) == 1)
+                    {
+                        boat.rotation = Rotation.LEFT;
+                        a = 1;
+                    }
+                    else
+                    {
+                        boat.rotation = Rotation.DOWN;
+                        b = 1;
+                    }
+
+                    for (int i = 0; i < boat.size; i++)
+                    {
+                        if (r + i * a > 9)
+                            continue;
+                        if (u + i * b > 9)
+                            continue;
+                        // AAAAAAAAAARGHHHHHHh
+                        if (this.myField.GetTile(r + i * a, u + i * b).character != "~")
+                        {
+                            break;
+                        }
+                        // :sob:
+                        if (i == boat.size - 1)
+                        {
+                            achjo = true;
+                            boat.startPos = (r, u);
+                            for (int j = 0; j < boat.size; j++)
+                            {
+                                this.myField.SetTile(boat.appearance, (boat.startPos.X + (a * j)), boat.startPos.Y + (b * j));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        // Renderer.RenderFields(this.view);
+        Console.WriteLine("aasdf");
+    }
 }
 
