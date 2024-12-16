@@ -6,6 +6,9 @@ public enum ViewSide
 
 public class PlayerView
 {
+    public static int colorIndex = 0;
+    private ConsoleColor[] colors = { ConsoleColor.DarkRed, ConsoleColor.DarkBlue };
+
     public int wX { get; private set; } = 48;
     public int wY { get; private set; } = 24;
 
@@ -20,8 +23,9 @@ public class PlayerView
     public (int X, int Y) cursorPos { get; private set; }
 
 
-    public PlayerView(PlayingField fSelf)
+    public PlayerView(PlayingField fSelf, String nameSelf, String nameEnemy)
     {
+        Tile fill = new Tile(" ", colors[colorIndex], Console.BackgroundColor);
         this.myFieldScreen = fSelf;
         this.enemyFieldScreen = new PlayingField(10, 10);
         Console.CursorVisible = false;
@@ -40,7 +44,7 @@ public class PlayerView
         this.screen = new Tile[wX, wY];
 
         // playing field
-        CreateOutline(0, 0, wX, wY, " "); // taky moznost: '▒'
+        CreateOutline(0, 0, wX, wY, fill); // taky moznost: '▒'
 
         int paddingTop = 4;
         // padding l/r (p) = (2/3)*size 
@@ -54,27 +58,26 @@ public class PlayerView
         achjoPomoc.Item1 = paddingLR + 1;
         achjoPomoc.Item2 = paddingTop + 1;
         myFieldPos = achjoPomoc;
-        CreateOutline(paddingLR, paddingTop, fieldSizeX, fieldSizeY);
+        CreateOutline(paddingLR, paddingTop, fieldSizeX, fieldSizeY, fill);
 
         // Prave pole
         achjoPomoc.Item1 = paddingLR + fieldSizeX + paddingMid + 1;
         achjoPomoc.Item2 = paddingTop + 1;
         enemyFieldPos = achjoPomoc;
 
-        CreateOutline(paddingLR + fieldSizeX + paddingMid, paddingTop, fieldSizeX, fieldSizeY);
+        CreateOutline(paddingLR + fieldSizeX + paddingMid, paddingTop, fieldSizeX, fieldSizeY, fill);
 
         // Dolni UI
-        CreateOutline(1, wY - 9, wX - 2, 8);
+        CreateOutline(1, wY - 9, wX - 2, 8, fill);
 
         // Levy nazev
-        CreateOutline(paddingLR, 1, fieldSizeX, 3);
+        CreateOutline(paddingLR, 1, fieldSizeX, 3, fill);
         // Pravy nazev
-        CreateOutline(paddingLR + fieldSizeX + paddingMid, 1, fieldSizeX, 3);
+        CreateOutline(paddingLR + fieldSizeX + paddingMid, 1, fieldSizeX, 3, fill);
 
-        WriteText(paddingLR + 2, 2, "Player 1");
-        WriteText(paddingLR + paddingMid + fieldSizeX + 2, 2, "Player 2");
-
-
+        WriteText(paddingLR + 2, 2, nameSelf);
+        WriteText(paddingLR + paddingMid + fieldSizeX + 2, 2, nameEnemy);
+        colorIndex += 1;
     }
 
     public Tile GetPixel(int x, int y)
@@ -82,11 +85,11 @@ public class PlayerView
         return screen[x, y];
     }
 
-    private void CreateOutline(int x, int y, int w, int h, string fill = " ")
+    private void CreateOutline(int x, int y, int w, int h, Tile fill)
     {
         // fill with ' ' y,x
         Enumerable.Range(y, h).ToList().ForEach(i =>
-                Enumerable.Range(x, w).ToList().ForEach(j => screen[j, i].character = fill));
+                Enumerable.Range(x, w).ToList().ForEach(j => screen[j, i] = fill));
 
         // horni/dolni line
         Enumerable.Range(x, w).ToList().ForEach(i => screen[i, y].character = "═");
@@ -116,10 +119,12 @@ public class PlayerView
         screen[x, y] = t;
     }
 
-    // result of spaghetti code :))
-    public void UpdateField(PlayingField reload)
+    public void ShowWinScreen(String name)
     {
-        this.myFieldScreen = reload;
+        CreateOutline((wX / 2) - 6, 4, 12, 6,
+                new Tile(" ", ConsoleColor.White, ConsoleColor.Yellow));
+        WriteText((wX / 2) - 4, 6, name);
+        WriteText((wX / 2) - 4, 7, "Won!");
     }
 }
 
@@ -128,11 +133,15 @@ public static class Renderer
 
     public static void RenderAll(PlayerView v)
     {
+        Console.SetCursorPosition(0, 0);
         for (int i = 0; i < v.wY; i++)
         {
             for (int j = 0; j < v.wX; j++)
             {
-                Console.Write(v.screen[j, i].character);
+                Tile t = v.screen[j, i];
+                Console.BackgroundColor = t.bg;
+                Console.ForegroundColor = t.fg;
+                Console.Write(t.character);
             }
             Console.WriteLine();
         }
@@ -238,3 +247,5 @@ public static class Renderer
         return true;
     }
 }
+
+

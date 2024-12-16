@@ -1,10 +1,12 @@
 public class Game
 {
-    public static string messageLog { get; set; } = "";
     private Player player1;
     private Player player2;
 
-    private Player[] players;
+    public static Player[] players { get; private set; } = [];
+    public static int playerIndex { get; private set; }
+
+    private int maxPoints = 0;
 
     public Game(Player player_1, Player player_2)
     {
@@ -13,11 +15,16 @@ public class Game
         players = [player_1, player_2];
     }
 
-    private int playerIndex;
 
-    public bool Setup()
+    public static Tile WATER_TILE = new Tile("~", ConsoleColor.White, ConsoleColor.Blue);
+
+    public bool Setup(Boat[] availableBoats)
     {
-        // player1.PlaceBoats();
+        foreach (Boat boat in availableBoats)
+            maxPoints += boat.size;
+
+        player1.PlaceBoats(availableBoats);
+        player2.PlaceBoats(availableBoats);
 
         return true;
     }
@@ -25,34 +32,65 @@ public class Game
     public bool GameLoop()
     {
         // zmena hrace 
+        Player enemyPlayer = players[playerIndex];
+
         playerIndex = 1 - playerIndex;
 
         Player currentPlayer = players[playerIndex];
-        Player enemyPlayer = players[1 - playerIndex];
 
+        // Ted hraje druhy hrac!
+
+        PlayerView shownView = currentPlayer.view;
+
+        Renderer.RenderAll(currentPlayer.view);
         (int X, int Y) shot = (0, 0);
         while (true)
         {
             // Hrac zadava tah
-            currentPlayer.NextMove(shot);
+            shot = currentPlayer.NextMove(shot);
 
             // Check trefy
             // -> Hrac strili znova pokud trefil
             Tile uncoveredTile = enemyPlayer.myField.GetTile(shot.X, shot.Y);
-            if (uncoveredTile.character != "~")
+
+            // Uz odkryto
+            if (!currentPlayer.view.enemyFieldScreen.GetTile(shot.X, shot.Y).Equals(WATER_TILE))
             {
-                // hit!
-                currentPlayer.view.enemyFieldScreen.SetTile(new Tile("", ConsoleColor.Red, ConsoleColor.Blue), shot.X, shot.Y);
+                Renderer.RenderCursor(currentPlayer.view, shot.X, shot.Y,
+                        ViewSide.ENEMY,
+                        new Tile(Icons.WRONG, ConsoleColor.Red, ConsoleColor.White));
+
+                if (currentPlayer.GetType() == typeof(PlayerHuman))
+                    Thread.Sleep(1000);
+            }
+            // Hit!
+            else if (!uncoveredTile.Equals(Game.WATER_TILE))
+            {
+                currentPlayer.view.enemyFieldScreen.SetTile(
+                    new Tile(Icons.FIRE, ConsoleColor.Red, ConsoleColor.Blue), shot.X, shot.Y);
+                enemyPlayer.view.myFieldScreen.SetTile(
+                    new Tile(Icons.FIRE, ConsoleColor.DarkRed, ConsoleColor.DarkBlue), shot.X, shot.Y);
+
                 Renderer.RenderFields(currentPlayer.view);
 
                 // hmph
-                Thread.Sleep(1000);
+                if (currentPlayer.GetType() == typeof(PlayerHuman))
+                    Thread.Sleep(1000);
                 currentPlayer.view.enemyFieldScreen.SetTile(uncoveredTile, shot.X, shot.Y);
                 Renderer.RenderFields(currentPlayer.view);
+
+                currentPlayer.pts += 1;
+
+                if (currentPlayer.pts == maxPoints)
+                {
+                    currentPlayer.Win();
+                    return false;
+                }
             }
             else
             {
-                Console.WriteLine(uncoveredTile);
+                currentPlayer.view.enemyFieldScreen.SetTile(new Tile(" ", ConsoleColor.White, ConsoleColor.DarkBlue), shot.X, shot.Y);
+                enemyPlayer.view.myFieldScreen.SetTile(new Tile(" ", ConsoleColor.White, ConsoleColor.DarkBlue), shot.X, shot.Y);
                 break;
             }
         }
@@ -61,10 +99,6 @@ public class Game
         return true;
     }
 
-    public void PlaceBoats()
-    {
-
-    }
 }
 
 public class PlayingField
@@ -121,7 +155,6 @@ public class PlayingField
             {
                 Console.ForegroundColor = this.field[i, j].fg;
                 Console.BackgroundColor = this.field[i, j].bg;
-                // Console.Write(this.field[i, j].character + " "); // Print each element
                 Console.Write(this.field[i, j].fg + " "); // Print each element
             }
             Console.WriteLine(); // Move to the next line after each row
@@ -151,7 +184,8 @@ public struct Tile
 
 public abstract class Player
 {
-    private int pts = 0;
+    public String name { get; protected set; }
+    public int pts = 0;
     // my field je hracovo pole
     public PlayingField myField { get; protected set; }
 
@@ -160,21 +194,30 @@ public abstract class Player
 
     public Boat[] boats { get; protected set; }
 
-    public Player(PlayingField _myField, PlayerView _view)
+    // gg jmena jsou cooked
+    public Player(PlayingField myField, String name, String nameEnemy)
     {
-        this.myField = _myField;
-        this.view = _view;
+        this.myField = myField;
         this.boats = [];
+        if (name.Length < 8)
+            this.name = name;
+        else
+            throw new Exception("Moc dlouhy jmeno");
+
+        this.view = new PlayerView(myField, name, nameEnemy);
+
     }
 
     public abstract void PlaceBoats(Boat[] placedBoats);
 
     public abstract (int X, int Y) NextMove((int X, int Y) cPos);
+
+    public abstract void Win();
 }
 
 public class PlayerHuman : Player
 {
-    public PlayerHuman(PlayingField _myField, PlayerView _view) : base(_myField, _view) { }
+    public PlayerHuman(PlayingField myField, String name, String nameEnemy) : base(myField, name, nameEnemy) { }
 
     public override (int X, int Y) NextMove((int X, int Y) cPos)
     {
@@ -182,7 +225,7 @@ public class PlayerHuman : Player
         bool aimDone = false;
         while (!aimDone)
         {
-            if (Renderer.RenderCursor(this.view, cPos.X, cPos.Y, ViewSide.ENEMY, new Tile("󰩷", ConsoleColor.White, ConsoleColor.Red)) == false)
+            if (Renderer.RenderCursor(this.view, cPos.X, cPos.Y, ViewSide.ENEMY, new Tile(Icons.CURSOR_SHOOT, ConsoleColor.White, ConsoleColor.Red)) == false)
             {
                 throw new Exception("bing bong");
             }
@@ -210,6 +253,13 @@ public class PlayerHuman : Player
                 case (ConsoleKey.Enter):
                     aimDone = true;
                     break;
+                case (ConsoleKey.V):
+                    Renderer.RenderAll(Game.players[1 - Game.playerIndex].view);
+                    Renderer.RenderFields(Game.players[1 - Game.playerIndex].view);
+                    Console.ReadKey();
+                    Renderer.RenderAll(Game.players[Game.playerIndex].view);
+                    Renderer.RenderFields(Game.players[Game.playerIndex].view);
+                    break;
                 default:
                     break;
             }
@@ -229,6 +279,7 @@ public class PlayerHuman : Player
 
     public override void PlaceBoats(Boat[] placeableBoats)
     {
+        Renderer.RenderAll(this.view);
         boats = placeableBoats;
 
         foreach (Boat boat in boats)
@@ -247,10 +298,8 @@ public class PlayerHuman : Player
                 Renderer.RenderFields(this.view);
                 if (Renderer.RenderBoatPlacement(this.view, cPos.X, cPos.Y, boat) == false)
                 {
-                    if (Renderer.RenderCursor(this.view, cPos.X, cPos.Y, ViewSide.MY,
-                                new Tile("", ConsoleColor.White, ConsoleColor.Red)) == false)
-                        throw new Exception("bing bong");
-
+                    Renderer.RenderCursor(this.view, cPos.X, cPos.Y, ViewSide.MY,
+                                new Tile(Icons.WRONG, ConsoleColor.White, ConsoleColor.Red));
                     placeable = false;
                 }
                 else
@@ -265,7 +314,7 @@ public class PlayerHuman : Player
 
                     for (int i = 0; i < boat.size; i++)
                     {
-                        if (this.myField.GetTile(boat.startPos.X + (_a * i), boat.startPos.Y + (_b * i)).character != "~")
+                        if (!this.myField.GetTile(boat.startPos.X + (_a * i), boat.startPos.Y + (_b * i)).Equals(Game.WATER_TILE))
                             placeable = false;
                     }
                 }
@@ -331,16 +380,25 @@ public class PlayerHuman : Player
             }
         }
     }
-}
 
+    public override void Win()
+    {
+        this.view.ShowWinScreen(this.name);
+        Renderer.RenderAll(this.view);
+    }
+}
 
 public class PlayerComputer : Player
 {
-    public PlayerComputer(PlayingField _myField, PlayerView _view) : base(_myField, _view) { }
+    public PlayerComputer(PlayingField myField, String name, String nameEnemy) : base(myField, name, nameEnemy) { }
 
     public override (int X, int Y) NextMove((int X, int Y) cPos)
     {
-        return (0, 0);
+        Renderer.RenderAll(this.view);
+        Renderer.RenderFields(this.view);
+        // Thread.Sleep(500);
+        Random r = new Random();
+        return (r.Next(0, 10), r.Next(0, 10));
     }
 
     public override void PlaceBoats(Boat[] placeableBoats)
@@ -352,51 +410,29 @@ public class PlayerComputer : Player
         {
             while (true)
             {
-                bool achjo = false;
-                while (!achjo)
-                {
-                    Console.Write(".");
-                    int r = rand.Next(0, boat.size);
-                    int u = rand.Next(0, boat.size);
-                    int a = 0, b = 0;
-                    if (rand.Next(0, 2) == 1)
-                    {
-                        boat.rotation = Rotation.LEFT;
-                        a = 1;
-                    }
-                    else
-                    {
-                        boat.rotation = Rotation.DOWN;
-                        b = 1;
-                    }
+                boat.startPos = (rand.Next(0, 10), rand.Next(0, 10));
+                boat.rotation = rand.Next(0, 2) == 0 ? Rotation.LEFT : Rotation.DOWN;
 
-                    for (int i = 0; i < boat.size; i++)
-                    {
-                        if (r + i * a > 9)
-                            continue;
-                        if (u + i * b > 9)
-                            continue;
-                        // AAAAAAAAAARGHHHHHHh
-                        if (this.myField.GetTile(r + i * a, u + i * b).character != "~")
-                        {
-                            break;
-                        }
-                        // :sob:
-                        if (i == boat.size - 1)
-                        {
-                            achjo = true;
-                            boat.startPos = (r, u);
-                            for (int j = 0; j < boat.size; j++)
-                            {
-                                this.myField.SetTile(boat.appearance, (boat.startPos.X + (a * j)), boat.startPos.Y + (b * j));
-                            }
-                        }
-                    }
-                }
+                if (Renderer.RenderBoatPlacement(this.view, boat.startPos.X, boat.startPos.Y, boat))
+                    break;
+            }
+            int a = 0, b = 0;
+            if (boat.rotation == Rotation.LEFT)
+                a = 1;
+            if (boat.rotation == Rotation.DOWN)
+                b = 1;
+
+            for (int i = 0; i < boat.size; i++)
+            {
+                this.myField.SetTile(boat.appearance, (boat.startPos.X + (a * i)), boat.startPos.Y + (b * i));
             }
         }
-        // Renderer.RenderFields(this.view);
-        Console.WriteLine("aasdf");
+    }
+
+    public override void Win()
+    {
+        this.view.ShowWinScreen(this.name);
+        Renderer.RenderAll(this.view);
     }
 }
 

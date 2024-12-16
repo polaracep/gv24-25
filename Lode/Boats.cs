@@ -17,6 +17,9 @@ public abstract class Boat
         appearance = app;
         rotation = rot;
     }
+    public Boat() : this((0, 0), Rotation.LEFT, new Tile("B", ConsoleColor.White, ConsoleColor.Blue))
+    {
+    }
 }
 
 class SimpleBoat : Boat
@@ -26,6 +29,10 @@ class SimpleBoat : Boat
     {
         this.size = 2;
     }
+    public SimpleBoat() : this((0, 0), Rotation.LEFT)
+    {
+    }
+
 }
 
 class LongerBoat : Boat
@@ -35,6 +42,9 @@ class LongerBoat : Boat
     {
         this.size = 3;
     }
+    public LongerBoat() : this((0, 0), Rotation.LEFT)
+    {
+    }
 }
 
 class LongestBoat : Boat
@@ -43,5 +53,8 @@ class LongestBoat : Boat
         base(_startPos, rot, new Tile("T", ConsoleColor.Magenta, ConsoleColor.DarkGreen))
     {
         this.size = 5;
+    }
+    public LongestBoat() : this((0, 0), Rotation.LEFT)
+    {
     }
 }
