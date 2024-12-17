@@ -418,9 +418,12 @@ public class PlayerComputer : Player
                 boat.startPos = (rand.Next(0, 10), rand.Next(0, 10));
                 boat.rotation = rand.Next(0, 2) == 0 ? Rotation.LEFT : Rotation.DOWN;
 
-                if (Renderer.RenderBoatPlacement(this.view, boat.startPos.X, boat.startPos.Y, boat))
-                    break;
+                if (!Renderer.RenderBoatPlacement(this.view, boat.startPos.X, boat.startPos.Y, boat))
+                    continue;
+
+                if (CheckBoatPlacement(boat)) break;
             }
+
             int a = 0, b = 0;
             if (boat.rotation == Rotation.LEFT)
                 a = 1;
@@ -432,6 +435,24 @@ public class PlayerComputer : Player
                 this.myField.SetTile(boat.appearance, (boat.startPos.X + (a * i)), boat.startPos.Y + (b * i));
             }
         }
+    }
+
+    private bool CheckBoatPlacement(Boat boat)
+    {
+        int a = 0, b = 0;
+        if (boat.rotation == Rotation.LEFT)
+            a = 1;
+        if (boat.rotation == Rotation.DOWN)
+            b = 1;
+        for (int i = 0; i < boat.size; i++)
+        {
+            if (!this.myField.GetTile(boat.startPos.X + (a * i), boat.startPos.Y + (b * i)).Equals(Game.WATER_TILE))
+            {
+                return false;
+            }
+
+        }
+        return true;
     }
 
     public override void Win()
