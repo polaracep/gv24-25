@@ -42,7 +42,10 @@ public class Game
 
         PlayerView shownView = currentPlayer.view;
 
-        Renderer.RenderAll(currentPlayer.view);
+        if (typeof(PlayerHuman) == currentPlayer.GetType())
+        {
+            Renderer.RenderAll(currentPlayer.view);
+        }
         (int X, int Y) shot = (0, 0);
         while (true)
         {
@@ -56,28 +59,30 @@ public class Game
             // Uz odkryto
             if (!currentPlayer.view.enemyFieldScreen.GetTile(shot.X, shot.Y).Equals(WATER_TILE))
             {
-                Renderer.RenderCursor(currentPlayer.view, shot.X, shot.Y,
-                        ViewSide.ENEMY,
-                        new Tile(Icons.WRONG, ConsoleColor.Red, ConsoleColor.White));
-
                 if (currentPlayer.GetType() == typeof(PlayerHuman))
-                    Thread.Sleep(1000);
+                    Renderer.RenderCursor(currentPlayer.view, shot.X, shot.Y,
+                            ViewSide.ENEMY,
+                            new Tile(Icons.WRONG, ConsoleColor.Red, ConsoleColor.White));
+                Thread.Sleep(1000);
             }
             // Hit!
             else if (!uncoveredTile.Equals(Game.WATER_TILE))
             {
-                currentPlayer.view.enemyFieldScreen.SetTile(
-                    new Tile(Icons.FIRE, ConsoleColor.Red, ConsoleColor.Blue), shot.X, shot.Y);
-                enemyPlayer.view.myFieldScreen.SetTile(
-                    new Tile(Icons.FIRE, ConsoleColor.DarkRed, ConsoleColor.DarkBlue), shot.X, shot.Y);
-
-                Renderer.RenderFields(currentPlayer.view);
 
                 // hmph
                 if (currentPlayer.GetType() == typeof(PlayerHuman))
+                {
+                    currentPlayer.view.enemyFieldScreen.SetTile(
+                        new Tile(Icons.FIRE, ConsoleColor.Red, ConsoleColor.Blue), shot.X, shot.Y);
+                    enemyPlayer.view.myFieldScreen.SetTile(
+                        new Tile(Icons.FIRE, ConsoleColor.DarkRed, ConsoleColor.DarkBlue), shot.X, shot.Y);
+
+                    Renderer.RenderFields(currentPlayer.view);
                     Thread.Sleep(1000);
+                    currentPlayer.view.enemyFieldScreen.SetTile(uncoveredTile, shot.X, shot.Y);
+                    Renderer.RenderFields(currentPlayer.view);
+                }
                 currentPlayer.view.enemyFieldScreen.SetTile(uncoveredTile, shot.X, shot.Y);
-                Renderer.RenderFields(currentPlayer.view);
 
                 currentPlayer.pts += 1;
 
