@@ -15,16 +15,17 @@ public class Game
         players = [player_1, player_2];
     }
 
-
     public static Tile WATER_TILE = new Tile("~", ConsoleColor.White, ConsoleColor.Blue);
 
-    public bool Setup(Boat[] availableBoats)
+    public bool Setup(Boat[] availableBoats, Weapon[] availableWeapons)
     {
         foreach (Boat boat in availableBoats)
             maxPoints += boat.size;
 
         player1.PlaceBoats(availableBoats);
+        player1.GearUp(availableWeapons);
         player2.PlaceBoats(availableBoats);
+        player2.GearUp(availableWeapons);
 
         return true;
     }
@@ -39,69 +40,112 @@ public class Game
         Player currentPlayer = players[playerIndex];
 
         // Ted hraje druhy hrac!
-
         PlayerView shownView = currentPlayer.view;
 
+        // Jestli hraje hrac, tak to vyrenderuj
         if (typeof(PlayerHuman) == currentPlayer.GetType())
         {
-            Renderer.RenderAll(currentPlayer.view);
+            Renderer.RenderUI(currentPlayer.view);
         }
         (int X, int Y) shot = (0, 0);
+
         while (true)
         {
             // Hrac zadava tah
             shot = currentPlayer.NextMove(shot);
 
             // Check trefy
-            // -> Hrac strili znova pokud trefil
-            Tile uncoveredTile = enemyPlayer.myField.GetTile(shot.X, shot.Y);
+            if (ProcessShot(shot))
+                break;
 
-            // Uz odkryto
+        }
+
+        // opakujem dokud jeden hrac nema zadny lode
+        return true;
+    }
+
+    private bool ProcessShot((int X, int Y) shotPos)
+    {
+        Weapon cWeapon = players[playerIndex].selectedWeapon;
+        List<(int X, int Y)> shots = new List<(int, int)>();
+
+        // add only valid shots
+        for (int i = 0; i < cWeapon.size.Y; i++)
+            for (int j = 0; j < cWeapon.size.X; j++)
+                if (cWeapon.weaponRange[i, j] == 1
+                        && players[1 - playerIndex].myField.ValidPos(j, i))
+                    shots.Add((
+                            (int)(Math.Ceiling((double)(cWeapon.size.X / 2)) + shotPos.X + j),
+                            (int)(Math.Ceiling((double)(cWeapon.size.Y / 2)) + shotPos.Y + i)
+                    ));
+
+        foreach ((int X, int Y) shot in shots)
+        {
+            if (Shoot(shot))
+                return false;
+        }
+        return true;
+    }
+
+    // returns if to repeat action
+    private bool Shoot((int X, int Y) shot)
+    {
+        Player currentPlayer = players[playerIndex];
+        Player enemyPlayer = players[1 - playerIndex];
+        Tile uncoveredTile = enemyPlayer.myField.GetTile(shot.X, shot.Y);
+
+        // Uz odkryto JEN pokud je zbran zakladni
+        if (currentPlayer.selectedWeapon.GetType() == typeof(BoringWeapon))
+        {
             if (!currentPlayer.view.enemyFieldScreen.GetTile(shot.X, shot.Y).Equals(WATER_TILE))
             {
                 if (currentPlayer.GetType() == typeof(PlayerHuman))
                     Renderer.RenderCursor(currentPlayer.view, shot.X, shot.Y,
                             ViewSide.ENEMY,
-                            new Tile(Icons.WRONG, ConsoleColor.Red, ConsoleColor.White));
+                            new Tile(Icons.WRONG, ConsoleColor.Red, ConsoleColor.White),
+                            currentPlayer.selectedWeapon
+                            );
                 Thread.Sleep(1000);
-            }
-            // Hit!
-            else if (!uncoveredTile.Equals(Game.WATER_TILE))
-            {
-
-                // hmph
-                if (currentPlayer.GetType() == typeof(PlayerHuman))
-                {
-                    currentPlayer.view.enemyFieldScreen.SetTile(
-                        new Tile(Icons.FIRE, ConsoleColor.Red, ConsoleColor.Blue), shot.X, shot.Y);
-                    enemyPlayer.view.myFieldScreen.SetTile(
-                        new Tile(Icons.FIRE, ConsoleColor.DarkRed, ConsoleColor.DarkBlue), shot.X, shot.Y);
-
-                    Renderer.RenderFields(currentPlayer.view);
-                    Thread.Sleep(1000);
-                    currentPlayer.view.enemyFieldScreen.SetTile(uncoveredTile, shot.X, shot.Y);
-                    Renderer.RenderFields(currentPlayer.view);
-                }
-                currentPlayer.view.enemyFieldScreen.SetTile(uncoveredTile, shot.X, shot.Y);
-
-                currentPlayer.pts += 1;
-
-                if (currentPlayer.pts == maxPoints)
-                {
-                    currentPlayer.Win();
-                    return false;
-                }
-            }
-            else
-            {
-                currentPlayer.view.enemyFieldScreen.SetTile(new Tile(" ", ConsoleColor.White, ConsoleColor.DarkBlue), shot.X, shot.Y);
-                enemyPlayer.view.myFieldScreen.SetTile(new Tile(" ", ConsoleColor.White, ConsoleColor.DarkBlue), shot.X, shot.Y);
-                break;
+                return true;
             }
         }
 
-        // opakujem dokud jeden hrac nema zadny lode
-        return true;
+        // Hit!
+        if (!uncoveredTile.Equals(Game.WATER_TILE))
+        {
+            // neco delame jen pro hrace, pocitac nic renderovat nepotrebuje
+            if (currentPlayer.GetType() == typeof(PlayerHuman))
+            {
+                currentPlayer.view.enemyFieldScreen.SetTile(
+                    new Tile(Icons.FIRE, ConsoleColor.Red, ConsoleColor.Blue),
+                    shot.X, shot.Y);
+                enemyPlayer.view.myFieldScreen.SetTile(
+                    new Tile(Icons.FIRE, ConsoleColor.DarkRed, ConsoleColor.DarkBlue),
+                    shot.X, shot.Y);
+
+                Renderer.RenderFields(currentPlayer.view);
+                Thread.Sleep(1000);
+                currentPlayer.view.enemyFieldScreen.SetTile(uncoveredTile, shot.X, shot.Y);
+                Renderer.RenderFields(currentPlayer.view);
+            }
+            currentPlayer.view.enemyFieldScreen.SetTile(uncoveredTile, shot.X, shot.Y);
+
+            currentPlayer.pts += 1;
+
+            if (currentPlayer.pts == maxPoints)
+            {
+                currentPlayer.Win();
+            }
+            return true;
+        }
+        // miss
+        else
+        {
+            currentPlayer.view.enemyFieldScreen.SetTile(new Tile(" ", ConsoleColor.White, ConsoleColor.DarkBlue), shot.X, shot.Y);
+            enemyPlayer.view.myFieldScreen.SetTile(new Tile(" ", ConsoleColor.White, ConsoleColor.DarkBlue), shot.X, shot.Y);
+            return false;
+        }
+
     }
 
 }
@@ -119,7 +163,7 @@ public class PlayingField
     // public String[,] _field { get; private set; }
     private Tile[,] field { get; set; }
 
-    public PlayingField(int w, int h)
+    public PlayingField(int w, int h, Tile decor)
     {
         sizeX = w;
         sizeY = h;
@@ -128,7 +172,7 @@ public class PlayingField
         // nacpat vsude vodu
         for (int _x = 0; _x < w; _x++)
             for (int _y = 0; _y < h; _y++)
-                field[_x, _y] = new Tile("~", ConsoleColor.White, ConsoleColor.Blue);
+                field[_x, _y] = decor;
         // ~ ; 󰞍 ; 󰼮
     }
 
@@ -172,6 +216,16 @@ public class PlayingField
         return field.Length;
     }
 
+    public bool ValidPos(int x, int y)
+    {
+        if (x >= this.sizeX || x < 0)
+            return false;
+
+        if (y >= this.sizeY || y < 0)
+            return false;
+
+        return true;
+    }
 }
 
 public struct Tile
@@ -199,41 +253,69 @@ public abstract class Player
 
     public Boat[] boats { get; protected set; }
 
+    public Weapon[] weapons { get; protected set; }
+
+    public Weapon selectedWeapon { get; protected set; }
+
     // gg jmena jsou cooked
     public Player(PlayingField myField, String name, String nameEnemy)
     {
         this.myField = myField;
         this.boats = [];
+        this.weapons = [];
+        this.selectedWeapon = new BoringWeapon(-1);
         if (name.Length < 8)
             this.name = name;
         else
             throw new Exception("Moc dlouhy jmeno");
 
         this.view = new PlayerView(myField, name, nameEnemy);
-
     }
 
     public abstract void PlaceBoats(Boat[] placedBoats);
 
+    public void GearUp(Weapon[] w)
+    {
+        this.weapons = w;
+    }
+
     public abstract (int X, int Y) NextMove((int X, int Y) cPos);
 
     public abstract void Win();
+
+    private int weaponIndex = 0;
+    public void NextWeapon()
+    {
+        if (weaponIndex > weapons.Length - 1)
+            weaponIndex = 0;
+        else
+            weaponIndex++;
+
+        selectedWeapon = weapons[weaponIndex];
+    }
 }
 
 public class PlayerHuman : Player
 {
     public PlayerHuman(PlayingField myField, String name, String nameEnemy) : base(myField, name, nameEnemy) { }
 
-    public override (int X, int Y) NextMove((int X, int Y) cPos)
+    public override (int X, int Y) NextMove((int X, int Y) lastPos)
     {
+        this.selectedWeapon = new BigWeapon(1);
         // set cursor to enemy window pos 
         bool aimDone = false;
         while (!aimDone)
         {
-            if (Renderer.RenderCursor(this.view, cPos.X, cPos.Y, ViewSide.ENEMY, new Tile(Icons.CURSOR_SHOOT, ConsoleColor.White, ConsoleColor.Red)) == false)
-            {
+            if (Renderer.RenderCursor(
+                        this.view,
+                        lastPos.X,
+                        lastPos.Y,
+                        ViewSide.ENEMY,
+                        new Tile(Icons.CURSOR_SHOOT, ConsoleColor.White, ConsoleColor.Red),
+                        this.selectedWeapon
+                        ) == false)
                 throw new Exception("bing bong");
-            }
+
             // Cekame
             ConsoleKeyInfo input = Console.ReadKey(true);
 
@@ -241,50 +323,55 @@ public class PlayerHuman : Player
             {
                 case (ConsoleKey.K):
                 case (ConsoleKey.UpArrow):
-                    cPos.Y -= 1;
+                    lastPos.Y -= 1;
                     break;
                 case (ConsoleKey.J):
                 case (ConsoleKey.DownArrow):
-                    cPos.Y += 1;
+                    lastPos.Y += 1;
                     break;
                 case (ConsoleKey.H):
                 case (ConsoleKey.LeftArrow):
-                    cPos.X -= 1;
+                    lastPos.X -= 1;
                     break;
                 case (ConsoleKey.L):
                 case (ConsoleKey.RightArrow):
-                    cPos.X += 1;
+                    lastPos.X += 1;
                     break;
                 case (ConsoleKey.Enter):
                     aimDone = true;
                     break;
                 case (ConsoleKey.V):
-                    Renderer.RenderAll(Game.players[1 - Game.playerIndex].view);
+                    // switch na druheho hrace
+                    Renderer.RenderUI(Game.players[1 - Game.playerIndex].view);
                     Renderer.RenderFields(Game.players[1 - Game.playerIndex].view);
                     Console.ReadKey();
-                    Renderer.RenderAll(Game.players[Game.playerIndex].view);
+                    Renderer.RenderUI(Game.players[Game.playerIndex].view);
                     Renderer.RenderFields(Game.players[Game.playerIndex].view);
+                    break;
+                case (ConsoleKey.C):
+                    this.NextWeapon();
+                    // Renderer.RenderStatusBar(this.view);
                     break;
                 default:
                     break;
             }
-            if (cPos.X >= this.myField.sizeX)
-                cPos.X = 0;
-            if (cPos.X < 0)
-                cPos.X = this.myField.sizeX - 1;
+            if (lastPos.X >= this.myField.sizeX)
+                lastPos.X = 0;
+            if (lastPos.X < 0)
+                lastPos.X = this.myField.sizeX - 1;
 
-            if (cPos.Y >= this.myField.sizeY)
-                cPos.Y = 0;
-            if (cPos.Y < 0)
-                cPos.Y = this.myField.sizeY - 1;
+            if (lastPos.Y >= this.myField.sizeY)
+                lastPos.Y = 0;
+            if (lastPos.Y < 0)
+                lastPos.Y = this.myField.sizeY - 1;
 
         }
-        return cPos;
+        return lastPos;
     }
 
     public override void PlaceBoats(Boat[] placeableBoats)
     {
-        Renderer.RenderAll(this.view);
+        Renderer.RenderUI(this.view);
         boats = placeableBoats;
 
         foreach (Boat boat in boats)
@@ -302,11 +389,7 @@ public class PlayerHuman : Player
 
                 Renderer.RenderFields(this.view);
                 if (Renderer.RenderBoatPlacement(this.view, cPos.X, cPos.Y, boat) == false)
-                {
-                    Renderer.RenderCursor(this.view, cPos.X, cPos.Y, ViewSide.MY,
-                                new Tile(Icons.WRONG, ConsoleColor.White, ConsoleColor.Red));
                     placeable = false;
-                }
                 else
                 {
                     int _a = 0, _b = 0;
@@ -389,17 +472,17 @@ public class PlayerHuman : Player
     public override void Win()
     {
         this.view.ShowWinScreen(this.name);
-        Renderer.RenderAll(this.view);
+        Renderer.RenderUI(this.view);
     }
 }
 
-public class PlayerComputer : Player
+public class PlayerComputerEasy : Player
 {
-    public PlayerComputer(PlayingField myField, String name, String nameEnemy) : base(myField, name, nameEnemy) { }
+    public PlayerComputerEasy(PlayingField myField, String name, String nameEnemy) : base(myField, name, nameEnemy) { }
 
     public override (int X, int Y) NextMove((int X, int Y) cPos)
     {
-        Renderer.RenderAll(this.view);
+        Renderer.RenderUI(this.view);
         Renderer.RenderFields(this.view);
         // Thread.Sleep(500);
         Random r = new Random();
@@ -458,7 +541,7 @@ public class PlayerComputer : Player
     public override void Win()
     {
         this.view.ShowWinScreen(this.name);
-        Renderer.RenderAll(this.view);
+        Renderer.RenderUI(this.view);
     }
 }
 

@@ -4,4 +4,5 @@ public class Icons
     public const String FIRE = "";
     public const String WRONG = "";
     public const String SPLASH = "";
+    public const String AMMO = "󰳨";
 }

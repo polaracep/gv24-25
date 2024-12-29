@@ -8,11 +8,11 @@ class Program
         Console.Clear();
         Console.CursorVisible = true;
 
-        PlayingField fieldPlayer = new PlayingField(10, 10);
-        PlayingField fieldComputer = new PlayingField(10, 10);
+        PlayingField fieldPlayer = new PlayingField(10, 10, Game.WATER_TILE);
+        PlayingField fieldComputer = new PlayingField(10, 10, Game.WATER_TILE);
 
         PlayerHuman humanPlayer = new PlayerHuman(fieldPlayer, "Hrac 1", "Hrac PC");
-        PlayerComputer pcPlayer = new PlayerComputer(fieldComputer, "Hrac PC", "Hrac 1");
+        PlayerComputerEasy pcPlayer = new PlayerComputerEasy(fieldComputer, "Hrac PC", "Hrac 1");
 
         Boat[] playerBoats = {
             new SimpleBoat(),
@@ -22,10 +22,17 @@ class Program
         };
 
         Game game = new Game(pcPlayer, humanPlayer);
-        Renderer.RenderAll(humanPlayer.view);
+        Renderer.RenderUI(humanPlayer.view);
         Renderer.RenderFields(humanPlayer.view);
 
-        game.Setup(playerBoats);
+        Weapon[] gear = {
+            new BoringWeapon(-1),
+            new BigWeapon(3),
+            new LineWeapon(2),
+            new VeryBigWeapon(1)
+        };
+
+        game.Setup(playerBoats, gear);
 
         while (game.GameLoop()) ;
 
