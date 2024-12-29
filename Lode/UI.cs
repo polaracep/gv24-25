@@ -72,7 +72,8 @@ public class PlayerView
 
         // Dolni statusBar
         CreateOutline(1, wY - 9, wX - 2, 8, fill);
-        statusBar = new StatusBar(wX - 2, 8);
+        statusBar = new StatusBar(wX - 4, 6);
+        statusBarPos = (2, wY - 8);
 
         // Levy nazev
         CreateOutline(paddingLR, 1, fieldSizeX, 3, fill);
@@ -140,11 +141,48 @@ public class StatusBar
 
     public StatusBar(int wX, int wY)
     {
-        statusBar = new PlayingField(wX, wY, Game.WATER_TILE);
+        statusBar = new PlayingField(wX, wY,
+                new Tile(" "));
         statusBarDim = (wX, wY);
-        statusBar.SetTile(new Tile(Icons.AMMO, ConsoleColor.Yellow, ConsoleColor.Black), 0, 0);
+
+        this.WriteText(0, 0, "Normal ammo:");
+        this.WriteText(0, 1, "Big ammo:");
+        this.WriteText(0, 2, "BIGGER ammo:");
+        this.WriteText(0, 3, "Noodle - ammo:");
+        this.WriteText(0, 4, "Noodle | ammo:");
+
+        statusBar.SetTile(new Tile("∞", ConsoleColor.Yellow, ConsoleColor.DarkGray), 15, 0);
+        statusBar.SetTile(new Tile("?", ConsoleColor.Yellow, ConsoleColor.DarkGray), 15, 1);
+        statusBar.SetTile(new Tile("?", ConsoleColor.Yellow, ConsoleColor.DarkGray), 15, 2);
+        statusBar.SetTile(new Tile("?", ConsoleColor.Yellow, ConsoleColor.DarkGray), 15, 3);
+        statusBar.SetTile(new Tile("?", ConsoleColor.Yellow, ConsoleColor.DarkGray), 15, 4);
     }
 
+    private void WriteText(int x, int y, string text)
+    {
+        char[] strArr = text.ToCharArray();
+        for (int i = 0; i < strArr.Length; i++)
+            this.statusBar.SetTile(new Tile(strArr[i].ToString()), x + i, y);
+    }
+
+    public void Update(Weapon[] wpns)
+    {
+        // AAAAAAAAAAAAAAARGHHHHHHHHHHHHH
+
+        foreach (Weapon w in wpns)
+        {
+            if (w.GetType() == typeof(BigWeapon))
+                statusBar.SetTile(new Tile(w.count.ToString(), ConsoleColor.Yellow, ConsoleColor.DarkGray), 15, 1);
+            if (w.GetType() == typeof(VeryBigWeapon))
+                statusBar.SetTile(new Tile(w.count.ToString(), ConsoleColor.Yellow, ConsoleColor.DarkGray), 15, 2);
+            if (w.GetType() == typeof(NoodleWeapon))
+                statusBar.SetTile(new Tile(w.count.ToString(), ConsoleColor.Yellow, ConsoleColor.DarkGray), 15, 3);
+            if (w.GetType() == typeof(NoodleDownWeapon))
+                statusBar.SetTile(new Tile(w.count.ToString(), ConsoleColor.Yellow, ConsoleColor.DarkGray), 15, 4);
+
+        }
+
+    }
     /*
      *  Co vsechno?
      *  - zivoty (lode)
@@ -213,7 +251,7 @@ public static class Renderer
             Console.SetCursorPosition(v.statusBarPos.X, v.statusBarPos.Y + i);
             for (int j = 0; j < sb.statusBarDim.W; j++)
             {
-                Tile t = sb.statusBar.GetTile(i, j);
+                Tile t = sb.statusBar.GetTile(j, i);
                 Console.ForegroundColor = t.fg;
                 Console.BackgroundColor = t.bg;
                 Console.Write(t.character);

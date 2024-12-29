@@ -46,6 +46,9 @@ public class Game
         if (typeof(PlayerHuman) == currentPlayer.GetType())
         {
             Renderer.RenderUI(currentPlayer.view);
+            // :(((((((
+            currentPlayer.view.statusBar.Update(currentPlayer.weapons);
+            Renderer.RenderStatusBar(currentPlayer.view);
         }
         (int X, int Y) shot = (0, 0);
 
@@ -64,11 +67,17 @@ public class Game
         return true;
     }
 
+    // vrati false jestli neuspejeme -> opakujeme
     private bool ProcessShot((int X, int Y) shotPos)
     {
         Player currentPlayer = players[playerIndex];
         Player enemyPlayer = players[1 - playerIndex];
         Weapon cWeapon = players[playerIndex].selectedWeapon;
+
+        // jinou zbran musime pouzit
+        if (cWeapon.count == 0)
+            return false;
+
         List<(int X, int Y)> shots = new List<(int, int)>();
 
         // add only valid shots
@@ -87,6 +96,7 @@ public class Game
                 return false;
         }
 
+        // display fire
         if (currentPlayer.GetType() == typeof(PlayerHuman))
         {
             Renderer.RenderFields(currentPlayer.view);
@@ -100,6 +110,8 @@ public class Game
 
             Renderer.RenderFields(currentPlayer.view);
         }
+
+        cWeapon.count -= 1;
         return true;
     }
 
@@ -141,7 +153,6 @@ public class Game
                     shot.X, shot.Y);
 
             }
-            currentPlayer.view.enemyFieldScreen.SetTile(uncoveredTile, shot.X, shot.Y);
 
             currentPlayer.pts += 1;
 
@@ -184,11 +195,10 @@ public class PlayingField
         sizeY = h;
         field = new Tile[w, h];
 
-        // nacpat vsude vodu
+        // nacpat vsude tajl
         for (int _x = 0; _x < w; _x++)
             for (int _y = 0; _y < h; _y++)
                 field[_x, _y] = decor;
-        // ~ ; 󰞍 ; 󰼮
     }
 
     public void SetTile(Tile tile, int x, int y)
@@ -251,6 +261,12 @@ public struct Tile
         this.fg = fg;
         this.bg = bg;
     }
+
+    public Tile(string character) :
+        this(character, Console.ForegroundColor, Console.BackgroundColor)
+    {
+        this.character = character;
+    }
     public string character = " ";
     public ConsoleColor fg { get; set; }
     public ConsoleColor bg { get; set; }
@@ -301,7 +317,7 @@ public abstract class Player
     private int weaponIndex = 0;
     public void NextWeapon()
     {
-        if (weaponIndex > weapons.Length - 1)
+        if (weaponIndex == weapons.Length - 1)
             weaponIndex = 0;
         else
             weaponIndex++;
@@ -358,13 +374,16 @@ public class PlayerHuman : Player
                     // switch na druheho hrace
                     Renderer.RenderUI(Game.players[1 - Game.playerIndex].view);
                     Renderer.RenderFields(Game.players[1 - Game.playerIndex].view);
+                    Renderer.RenderStatusBar(Game.players[1 - Game.playerIndex].view);
                     Console.ReadKey();
                     Renderer.RenderUI(Game.players[Game.playerIndex].view);
                     Renderer.RenderFields(Game.players[Game.playerIndex].view);
+                    Renderer.RenderStatusBar(Game.players[Game.playerIndex].view);
                     break;
                 case (ConsoleKey.C):
                     this.NextWeapon();
-                    // Renderer.RenderStatusBar(this.view);
+                    this.view.statusBar.Update(this.weapons);
+                    Renderer.RenderStatusBar(this.view);
                     break;
                 default:
                     break;
@@ -488,7 +507,6 @@ public class PlayerHuman : Player
         this.view.ShowWinScreen(this.name);
         Renderer.RenderUI(this.view);
         System.Environment.Exit(1);
-
     }
 }
 
@@ -558,6 +576,7 @@ public class PlayerComputerEasy : Player
     {
         this.view.ShowWinScreen(this.name);
         Renderer.RenderUI(this.view);
+        System.Environment.Exit(1);
     }
 }
 

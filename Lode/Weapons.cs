@@ -3,7 +3,7 @@ public abstract class Weapon
     public int[,] weaponRange { get; protected set; }
     public (int X, int Y) size;
 
-    public int count { get; protected set; }
+    public int count;
 
     public Weapon(int cnt)
     {
@@ -58,9 +58,9 @@ public class VeryBigWeapon : Weapon
     }
 }
 
-public class LineWeapon : Weapon
+public class NoodleWeapon : Weapon
 {
-    public LineWeapon(int cnt) : base(cnt)
+    public NoodleWeapon(int cnt) : base(cnt)
     {
         int[,] array =
         {
@@ -72,6 +72,19 @@ public class LineWeapon : Weapon
         };
         this.weaponRange = array;
         this.size = (1, 5);
+    }
+}
+
+public class NoodleDownWeapon : Weapon
+{
+    public NoodleDownWeapon(int cnt) : base(cnt)
+    {
+        int[,] array =
+        {
+            {1, 1, 1, 1, 1},
+        };
+        this.weaponRange = array;
+        this.size = (5, 1);
     }
 }
 

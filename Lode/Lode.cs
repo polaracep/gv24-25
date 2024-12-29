@@ -24,12 +24,14 @@ class Program
         Game game = new Game(pcPlayer, humanPlayer);
         Renderer.RenderUI(humanPlayer.view);
         Renderer.RenderFields(humanPlayer.view);
+        Renderer.RenderStatusBar(humanPlayer.view);
 
         Weapon[] gear = {
             new BoringWeapon(-1),
             new BigWeapon(3),
-            new LineWeapon(2),
-            new VeryBigWeapon(1)
+            new VeryBigWeapon(1),
+            new NoodleWeapon(2),
+            new NoodleDownWeapon(2)
         };
 
         game.Setup(playerBoats, gear);
