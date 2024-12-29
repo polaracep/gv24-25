@@ -262,10 +262,9 @@ public static class Renderer
         Renderer.RenderFields(v);
         for (int i = 0; i < w.size.Y; i++)
             for (int j = 0; j < w.size.X; j++)
-                if (w.weaponRange[i, j] == 1)
-                //&& v.myFieldScreen.ValidPos(j, i))
+                if (w.weaponRange[i, j] == 1 && v.myFieldScreen.ValidPos(x + j, y + i))
                 {
-                    Console.SetCursorPosition(fPos.X + x, fPos.Y + y);
+                    Console.SetCursorPosition(fPos.X + x + j, fPos.Y + y + i);
                     Console.BackgroundColor = cursorAppearance.bg;
                     Console.ForegroundColor = cursorAppearance.fg;
                     Console.Write(cursorAppearance.character);

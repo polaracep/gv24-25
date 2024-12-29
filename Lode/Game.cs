@@ -66,6 +66,8 @@ public class Game
 
     private bool ProcessShot((int X, int Y) shotPos)
     {
+        Player currentPlayer = players[playerIndex];
+        Player enemyPlayer = players[1 - playerIndex];
         Weapon cWeapon = players[playerIndex].selectedWeapon;
         List<(int X, int Y)> shots = new List<(int, int)>();
 
@@ -75,14 +77,28 @@ public class Game
                 if (cWeapon.weaponRange[i, j] == 1
                         && players[1 - playerIndex].myField.ValidPos(j, i))
                     shots.Add((
-                            (int)(Math.Ceiling((double)(cWeapon.size.X / 2)) + shotPos.X + j),
-                            (int)(Math.Ceiling((double)(cWeapon.size.Y / 2)) + shotPos.Y + i)
+                            (shotPos.X + j),
+                            (shotPos.Y + i)
                     ));
 
         foreach ((int X, int Y) shot in shots)
         {
             if (Shoot(shot))
                 return false;
+        }
+
+        if (currentPlayer.GetType() == typeof(PlayerHuman))
+        {
+            Renderer.RenderFields(currentPlayer.view);
+
+            Thread.Sleep(1000);
+            foreach ((int X, int Y) shot in shots)
+            {
+                if (enemyPlayer.myField.ValidPos(shot.X, shot.Y))
+                    currentPlayer.view.enemyFieldScreen.SetTile(enemyPlayer.myField.GetTile(shot.X, shot.Y), shot.X, shot.Y);
+            }
+
+            Renderer.RenderFields(currentPlayer.view);
         }
         return true;
     }
@@ -92,6 +108,7 @@ public class Game
     {
         Player currentPlayer = players[playerIndex];
         Player enemyPlayer = players[1 - playerIndex];
+        if (!enemyPlayer.myField.ValidPos(shot.X, shot.Y)) return false;
         Tile uncoveredTile = enemyPlayer.myField.GetTile(shot.X, shot.Y);
 
         // Uz odkryto JEN pokud je zbran zakladni
@@ -123,10 +140,6 @@ public class Game
                     new Tile(Icons.FIRE, ConsoleColor.DarkRed, ConsoleColor.DarkBlue),
                     shot.X, shot.Y);
 
-                Renderer.RenderFields(currentPlayer.view);
-                Thread.Sleep(1000);
-                currentPlayer.view.enemyFieldScreen.SetTile(uncoveredTile, shot.X, shot.Y);
-                Renderer.RenderFields(currentPlayer.view);
             }
             currentPlayer.view.enemyFieldScreen.SetTile(uncoveredTile, shot.X, shot.Y);
 
@@ -136,7 +149,8 @@ public class Game
             {
                 currentPlayer.Win();
             }
-            return true;
+            if (currentPlayer.selectedWeapon.GetType() == typeof(BoringWeapon))
+                return true;
         }
         // miss
         else
@@ -146,6 +160,7 @@ public class Game
             return false;
         }
 
+        return false;
     }
 
 }
@@ -301,7 +316,6 @@ public class PlayerHuman : Player
 
     public override (int X, int Y) NextMove((int X, int Y) lastPos)
     {
-        this.selectedWeapon = new BigWeapon(1);
         // set cursor to enemy window pos 
         bool aimDone = false;
         while (!aimDone)
@@ -473,6 +487,8 @@ public class PlayerHuman : Player
     {
         this.view.ShowWinScreen(this.name);
         Renderer.RenderUI(this.view);
+        System.Environment.Exit(1);
+
     }
 }
 
